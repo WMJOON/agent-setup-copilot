@@ -19,7 +19,7 @@ description: >
 
 ```
 skills/agent-setup-copilot/script/
-├── loader.py      # ontology + concepts + relations fetch → stdout
+├── loader.py      # concepts/ + instances/ fetch → stdout
 ├── estimator.py   # 성능 추산: t/s 계산, 메모리 적합 여부, use-case 적합도
 └── transition.py  # API → 로컬 전환 시점 분석: 비용 성장, 손익분기, 최적 전환 월
 ```
@@ -28,20 +28,20 @@ skills/agent-setup-copilot/script/
 
 ## 워크플로우
 
-### 1단계 — 온톨로지 + 컨셉 로드
+### 1단계 — 온톨로지 로드
 
 ```bash
 python3 skills/agent-setup-copilot/script/loader.py
 ```
 
-`agent-setup-ontology`의 `ontology.yaml`(인스턴스)과 `concepts.yaml`(의미 정의)을
-GitHub raw에서 fetch해 stdout에 출력한다.
+`agent-setup-ontology`의 `concepts/`(의미 정의)과 `instances/`(인스턴스 데이터)를
+GitHub raw에서 per-entity YAML 파일로 fetch해 stdout에 출력한다.
 실패 시 `skills/agent-setup-copilot/script/bundle/`의 fallback 사용.
 
 출력 구조:
 ```
-# === ONTOLOGY ===   ← 디바이스·모델·프레임워크·use_case 인스턴스
-# === CONCEPTS ===   ← tier/quality/kind/runtime 등의 의미 정의
+# === CONCEPTS ===    ← tier/quality/kind/runtime/cost_estimation/usage_input 등의 의미 정의
+# === INSTANCES ===   ← 디바이스·모델·프레임워크·use_case·repo·setup_profile 인스턴스
 ```
 
 ### 2단계 — 추론
@@ -105,6 +105,7 @@ Model   : qwen3.5:35b-a3b  [MoE, 35B params]
 ### 2-c단계 — 전환 시점 분석 (사용량 정보 제공 시)
 
 사용자가 현재 API 비용이나 토큰 사용량을 알려주면 전환 시점을 계산한다.
+`concepts/cost_estimation.yaml`의 공식과 `concepts/usage_input.yaml`의 입력 구조를 참조.
 
 ```bash
 # 월 비용 + 성장률로 분석
@@ -145,6 +146,18 @@ device.price_search_query: "Mac Mini M4 32GB price"
 ```
 
 PC 빌드 견적 요청 시 GPU + RAM `price_search_query`를 합산해 총 비용 추정.
+
+### 2-e단계 — 레포 안내 및 셋업 프로필 (필요 시)
+
+사용자가 "어떻게 세팅해?" 또는 특정 프레임워크 설치를 물으면:
+- `instances/repo.yaml`에서 해당 레포의 `install`, `quickstart` 제공
+- `instances/setup_profile.yaml`에서 완성형 세팅 조합의 `setup_steps` 제공
+
+```
+예시:
+"OpenClaw 설치하고 싶어" → repos[repo-openclaw].install 출력
+"맥미니 + DGX Spark 조합은?" → setup_profiles[setup-mac-mini-dgx-hybrid] 로드
+```
 
 ---
 
@@ -200,4 +213,14 @@ python3 skills/agent-setup-copilot/script/loader.py --update
 
 "DGX Spark 뭐야? LLM에 좋아?"
 → devices에서 nvidia_dgx_spark 로드 → Grace Blackwell, 128GB, 72B 모델 가능 설명
+
+"AutoGen으로 멀티에이전트 파이프라인 만들고 싶어"
+→ frameworks[autogen] + repos[repo-autogen] 로드 → 설치 + quickstart 제공
+
+"Dify랑 Open WebUI 차이가 뭐야?"
+→ frameworks + repos에서 dify, open-webui 비교 → UI/기능/복잡도 차이 설명
+
+"deepseek-r1 어디에 쓰면 좋아?"
+→ models[deepseek-r1:8b/32b] + relations[model_use_case_notes] 참조
+→ reasoning 모델 특성: LLM-as-Judge, 코드 리뷰에 적합, tool_calling 불가 안내
 ```

@@ -37,7 +37,7 @@
           "id":                    { "type": "string", "pattern": "^[a-z0-9_.:-]+$" },
           "label":                 { "type": "string" },
           "type":                  { "type": "string", "enum": ["macbook", "mac-mini", "mac-studio", "pc", "ai-supercomputer", "other"] },
-          "chip":                  { "type": "string" },
+          "chip":                  { "type": ["string", "null"] },
           "memory_gb":             { "type": "integer", "minimum": 1 },
           "memory_bandwidth_gbs":  { "type": "number" },
           "gpu_vram_gb":           { "type": "integer", "minimum": 0 },
@@ -73,7 +73,7 @@
           "label":           { "type": "string" },
           "params_b":        { "type": "number", "exclusiveMinimum": 0 },
           "active_params_b": { "type": "number", "exclusiveMinimum": 0 },
-          "type":            { "type": "string", "enum": ["dense", "MoE"] },
+          "type":            { "type": "string", "enum": ["dense", "MoE", "reasoning"] },
           "min_memory_gb":   { "type": "integer", "minimum": 1 },
           "quality":         { "type": "string", "enum": ["light", "standard", "standard-plus", "pro"] },
           "tool_calling":    { "type": "boolean" },
@@ -161,6 +161,62 @@
           },
           "local_alternative": { "type": "string" },
           "note":              { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "github", "framework_ref", "category"],
+        "properties": {
+          "id":                 { "type": "string", "pattern": "^[a-z0-9_.:-]+$" },
+          "label":              { "type": "string" },
+          "github":             { "type": "string" },
+          "framework_ref":      { "type": "string" },
+          "category":           { "type": "string", "enum": ["agent", "automation", "ui", "ide", "rag"] },
+          "stars_approx":       { "type": "string" },
+          "min_model_quality":  { "type": "string", "enum": ["light", "standard", "standard-plus", "pro"] },
+          "min_memory_gb":      { "type": "integer", "minimum": 1 },
+          "ollama_compatible":  { "type": "boolean" },
+          "install":            { "type": "string" },
+          "quickstart":         { "type": "string" },
+          "setup_guide":        { "type": "string" },
+          "awesome_list":       { "type": "string" },
+          "note":               { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+
+    "setup_profiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "devices", "framework", "use_cases", "complexity"],
+        "properties": {
+          "id":             { "type": "string", "pattern": "^[a-z0-9_.:-]+$" },
+          "label":          { "type": "string" },
+          "devices":        { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "roles":          { "type": "object", "additionalProperties": { "type": "string" } },
+          "model":          { "type": "string" },
+          "model_light":    { "type": "string" },
+          "model_heavy":    { "type": "string" },
+          "framework":      { "type": "string" },
+          "repo":           { "type": "string" },
+          "use_cases": {
+            "oneOf": [
+              { "type": "array", "items": { "type": "string" } },
+              { "type": "string", "const": "all" }
+            ]
+          },
+          "complexity":     { "type": "string", "enum": ["low", "medium", "high"] },
+          "always_on":      { "type": "boolean" },
+          "monthly_cost":   { "type": "string" },
+          "note":           { "type": "string" },
+          "setup_steps":    { "type": "array", "items": { "type": "string" } }
         },
         "additionalProperties": false
       }

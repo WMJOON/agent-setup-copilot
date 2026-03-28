@@ -1,0 +1,40 @@
+# agent-setup-ontology — Cost Estimation concept definitions (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+
+version: "0.1.0"
+
+cost_estimation:
+  what: >
+    Framework for estimating monthly LLM API costs and performing break-even
+    analysis against local hardware investment. Helps users decide when
+    transitioning to local inference becomes cost-effective.
+
+  token_usage_profiles:
+    general_qa:
+      typical_k: 20
+      heavy_k: 100
+      description: General question-answering and chat usage.
+    code_generation:
+      typical_k: 80
+      heavy_k: 300
+      description: Code writing, review, and refactoring tasks.
+    web_automation:
+      typical_k: 150
+      heavy_k: 500
+      description: Browser automation, scraping, and web-agent workflows.
+    multi_agent:
+      typical_k: 500
+      heavy_k: 2000
+      description: Multi-agent orchestration with inter-agent communication.
+
+  monthly_cost_formula:
+    description: >
+      monthly_cost = (tokens_per_day / 1_000_000) * price_per_million * 30.
+      Token counts use the "k" unit (thousands of tokens per day).
+
+  break_even_rule:
+    description: >
+      break_even_months = hardware_cost / monthly_api_savings.
+      If break_even_months <= 12, local transition is strongly recommended.
+      If 12 < break_even_months <= 24, transition is worthwhile for heavy users.
+      If break_even_months > 24, staying on API may be more practical.

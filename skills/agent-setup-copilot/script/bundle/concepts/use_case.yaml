@@ -1,0 +1,22 @@
+# agent-setup-ontology — Use Case concept definitions (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+
+version: "0.1.0"
+
+use_case:
+  what: >
+    Use cases define what users want to accomplish with local AI agents.
+    Each use case captures the workload profile, resource requirements, and
+    recommended stack so the copilot can match intent to hardware and software.
+
+  fields:
+    min_memory_gb:
+      description: Minimum system RAM (GB) needed to run models that satisfy this use case.
+    needs_always_on:
+      description: Whether the use case benefits from a device that runs 24/7 (e.g., automation, monitoring).
+    requires_gpu:
+      description: Whether GPU acceleration is required or merely recommended.
+    recommended_models:
+      description: List of model IDs known to perform well for this use case.
+    recommended_frameworks:
+      description: List of framework IDs that provide tooling aligned with this use case.

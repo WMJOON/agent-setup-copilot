@@ -1,16 +1,29 @@
 #!/usr/bin/env python3
 """
-Ontology + concepts loader — outputs both to stdout for Claude to read.
+Ontology loader — fetches concepts + instances from agent-setup-ontology
+and outputs them to stdout for Claude to read.
+
+The ontology repo uses a per-entity directory layout:
+
+    concepts/           ← semantic definitions (what fields mean)
+      use_case.yaml, device.yaml, model.yaml, framework.yaml,
+      api_service.yaml, component.yaml, repo.yaml, setup_profile.yaml,
+      cost_estimation.yaml, usage_input.yaml, relation.yaml
+
+    instances/          ← actual data (devices, models, frameworks, …)
+      use_case.yaml, device.yaml, model.yaml, framework.yaml,
+      api_service.yaml, component.yaml, repo.yaml, setup_profile.yaml,
+      relation.yaml
 
 Priority order (per file):
-  1. AGENT_COPILOT_ONTOLOGY_URL / AGENT_COPILOT_CONCEPTS_URL env override
+  1. Environment variable override (AGENT_COPILOT_BASE_URL)
   2. agent-setup-ontology GitHub raw fetch
   3. Local cache (~/.cache/agent-setup-copilot/)
-  4. Bundle fallback (copilot/bundle/)
+  4. Bundle fallback (script/bundle/)
 
 Usage:
-  python3 copilot/loader.py           # print ontology + concepts
-  python3 copilot/loader.py --update  # force refresh cache then print
+  python3 skills/agent-setup-copilot/script/loader.py
+  python3 skills/agent-setup-copilot/script/loader.py --update
 """
 
 import argparse
@@ -21,21 +34,55 @@ from pathlib import Path
 
 import yaml
 
-_BASE = "https://raw.githubusercontent.com/WMJOON/agent-setup-ontology/main"
+_BASE = os.getenv(
+    "AGENT_COPILOT_BASE_URL",
+    "https://raw.githubusercontent.com/WMJOON/agent-setup-ontology/main",
+)
 
-ONTOLOGY_URL  = os.getenv("AGENT_COPILOT_ONTOLOGY_URL",  f"{_BASE}/ontology.yaml")
-CONCEPTS_URL  = os.getenv("AGENT_COPILOT_CONCEPTS_URL",  f"{_BASE}/concepts.yaml")
-RELATIONS_URL = os.getenv("AGENT_COPILOT_RELATIONS_URL", f"{_BASE}/relations.yaml")
-
-CACHE_DIR  = Path.home() / ".cache" / "agent-setup-copilot"
+CACHE_DIR = Path.home() / ".cache" / "agent-setup-copilot"
 BUNDLE_DIR = Path(__file__).parent / "bundle"
-CACHE_TTL  = 60 * 60 * 24  # 24 hours
+CACHE_TTL = 60 * 60 * 24  # 24 hours
 
-_FILES = {
-    "ontology":  (ONTOLOGY_URL,  CACHE_DIR / "ontology.yaml",  BUNDLE_DIR / "ontology.yaml"),
-    "concepts":  (CONCEPTS_URL,  CACHE_DIR / "concepts.yaml",  BUNDLE_DIR / "concepts.yaml"),
-    "relations": (RELATIONS_URL, CACHE_DIR / "relations.yaml", BUNDLE_DIR / "relations.yaml"),
-}
+# Entity names shared by both concepts/ and instances/
+_SHARED_ENTITIES = [
+    "use_case",
+    "device",
+    "model",
+    "framework",
+    "api_service",
+    "component",
+    "repo",
+    "setup_profile",
+    "relation",
+]
+
+# Entities that only exist in concepts/
+_CONCEPTS_ONLY = [
+    "cost_estimation",
+    "usage_input",
+]
+
+# Build file map: (url, cache_path, bundle_path)
+_FILES: dict[str, tuple[str, Path, Path]] = {}
+
+for entity in _SHARED_ENTITIES:
+    _FILES[f"concepts/{entity}"] = (
+        f"{_BASE}/concepts/{entity}.yaml",
+        CACHE_DIR / "concepts" / f"{entity}.yaml",
+        BUNDLE_DIR / "concepts" / f"{entity}.yaml",
+    )
+    _FILES[f"instances/{entity}"] = (
+        f"{_BASE}/instances/{entity}.yaml",
+        CACHE_DIR / "instances" / f"{entity}.yaml",
+        BUNDLE_DIR / "instances" / f"{entity}.yaml",
+    )
+
+for entity in _CONCEPTS_ONLY:
+    _FILES[f"concepts/{entity}"] = (
+        f"{_BASE}/concepts/{entity}.yaml",
+        CACHE_DIR / "concepts" / f"{entity}.yaml",
+        BUNDLE_DIR / "concepts" / f"{entity}.yaml",
+    )
 
 
 def load_all(force_update: bool = False) -> dict[str, dict]:
@@ -89,18 +136,27 @@ def _read(path: Path) -> dict:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Load ontology + concepts for Claude")
+    parser = argparse.ArgumentParser(description="Load ontology for Claude")
     parser.add_argument("--update", action="store_true", help="Force cache refresh")
     args = parser.parse_args()
 
     try:
         data = load_all(force_update=args.update)
-        print("# === ONTOLOGY ===")
-        print(yaml.dump(data["ontology"],  allow_unicode=True, default_flow_style=False))
+
+        # Group and print concepts
         print("# === CONCEPTS ===")
-        print(yaml.dump(data["concepts"],  allow_unicode=True, default_flow_style=False))
-        print("# === RELATIONS ===")
-        print(yaml.dump(data["relations"], allow_unicode=True, default_flow_style=False))
+        for key in sorted(k for k in data if k.startswith("concepts/")):
+            entity = key.split("/", 1)[1]
+            print(f"\n# --- {entity} ---")
+            print(yaml.dump(data[key], allow_unicode=True, default_flow_style=False))
+
+        # Group and print instances
+        print("# === INSTANCES ===")
+        for key in sorted(k for k in data if k.startswith("instances/")):
+            entity = key.split("/", 1)[1]
+            print(f"\n# --- {entity} ---")
+            print(yaml.dump(data[key], allow_unicode=True, default_flow_style=False))
+
     except FileNotFoundError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)

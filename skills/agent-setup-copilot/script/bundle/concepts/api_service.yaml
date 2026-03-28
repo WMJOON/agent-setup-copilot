@@ -1,0 +1,24 @@
+# agent-setup-ontology — API Service concept definitions (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+
+version: "0.1.0"
+
+api_service:
+  what: >
+    Cloud LLM API services that serve as a starting point for users before
+    transitioning to local inference. Provides a baseline for cost comparison
+    and capability matching.
+
+  fields:
+    provider:
+      description: The company or organisation offering the API (e.g., OpenAI, Anthropic, Google).
+    quality:
+      description: Quality tier of the API model, used to find equivalent local models.
+    pricing:
+      description: >
+        Cost structure — typically per-million input/output tokens. Used for
+        break-even analysis against local hardware investment.
+    local_alternative:
+      description: >
+        Reference to a local model that provides comparable capability,
+        enabling the transition from cloud to local inference.

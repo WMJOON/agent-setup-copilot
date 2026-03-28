@@ -3,12 +3,15 @@
 agent-setup-copilot governance: 정식 온톨로지 검증기
 Source of Truth: agent-setup-copilot/governance/scripts/validate.py
 
-온톨로지 레포(local-agent-ontology)의 ontology-harness 스킬도
+온톨로지 레포(agent-setup-ontology)의 ontology-harness 스킬도
 이 스크립트를 참조해 검증을 위임한다.
 
 사용:
-  # 소비자 레포에서 직접 실행
+  # 단일 파일 검증
   python governance/scripts/validate.py --ontology path/to/ontology.yaml
+
+  # 디렉토리 기반 검증 (per-entity YAML files)
+  python governance/scripts/validate.py --instances-dir path/to/instances/
 
   # CI 모드 (실패 시 exit 1)
   python governance/scripts/validate.py --ontology ontology.yaml --strict
@@ -33,26 +36,35 @@ SCHEMA_PATH = GOVERNANCE_DIR / "schema.json"
 ID_PATTERN = re.compile(r"^[a-z0-9_.:-]+$")
 
 REQUIRED_FIELDS = {
-    "use_cases":    ["id", "label", "description", "keywords", "min_memory_gb"],
-    "devices":      ["id", "label", "type", "memory_gb", "tier", "max_model"],
-    "models":       ["id", "label", "params_b", "type", "min_memory_gb", "quality", "tool_calling"],
-    "frameworks":   ["id", "label", "kind", "complexity", "local_capable", "runtime_support"],
-    "api_services": ["id", "label", "provider", "quality", "tool_calling", "pricing"],
-    "components":   ["id", "label", "component_type", "inference_tier", "price_search_query"],
+    "use_cases":       ["id", "label", "description", "keywords", "min_memory_gb"],
+    "devices":         ["id", "label", "type", "memory_gb", "tier", "max_model"],
+    "models":          ["id", "label", "params_b", "type", "min_memory_gb", "quality", "tool_calling"],
+    "frameworks":      ["id", "label", "kind", "complexity", "local_capable", "runtime_support"],
+    "api_services":    ["id", "label", "provider", "quality", "tool_calling", "pricing"],
+    "components":      ["id", "label", "component_type", "inference_tier", "price_search_query"],
+    "repos":           ["id", "label", "github", "framework_ref", "category"],
+    "setup_profiles":  ["id", "label", "devices", "framework", "use_cases", "complexity"],
 }
 
 ENUM_CONTRACTS = {
     "devices": {
-        "type":        {"macbook", "mac-mini", "mac-studio", "pc", "other"},
+        "type":        {"macbook", "mac-mini", "mac-studio", "pc", "ai-supercomputer", "other"},
         "tier":        {"light", "standard", "standard-plus", "pro"},
         "portability": {"portable", "stationary"},
     },
     "models": {
-        "type":    {"dense", "MoE"},
+        "type":    {"dense", "MoE", "reasoning"},
         "quality": {"light", "standard", "standard-plus", "pro"},
     },
     "frameworks": {
         "kind":       {"agent", "automation", "ui", "ide", "rag"},
+        "complexity": {"low", "medium", "high"},
+    },
+    "repos": {
+        "category":          {"agent", "automation", "ui", "ide", "rag"},
+        "min_model_quality": {"light", "standard", "standard-plus", "pro"},
+    },
+    "setup_profiles": {
         "complexity": {"low", "medium", "high"},
     },
 }
@@ -62,14 +74,48 @@ PROVIDER_ALLOWED = {"anthropic", "openai", "google", "mistral", "cohere", "other
 
 # Cross-reference contract: (source_section, source_field, target_section)
 CROSS_REF_CONTRACTS = [
-    ("devices",      "supported_use_cases",   "use_cases"),
-    ("devices",      "unsupported_use_cases",  "use_cases"),
-    ("devices",      "max_model",              "models"),
-    ("use_cases",    "recommended_models",     "models"),
-    ("use_cases",    "recommended_frameworks", "frameworks"),
-    ("api_services", "local_alternative",      "models"),     # api_service → model
+    ("devices",         "supported_use_cases",   "use_cases"),
+    ("devices",         "unsupported_use_cases",  "use_cases"),
+    ("devices",         "max_model",              "models"),
+    ("use_cases",       "recommended_models",     "models"),
+    ("use_cases",       "recommended_frameworks", "frameworks"),
+    ("api_services",    "local_alternative",      "models"),
+    ("repos",           "framework_ref",          "frameworks"),
+    ("setup_profiles",  "devices",                "devices"),
+    ("setup_profiles",  "framework",              "frameworks"),
+    ("setup_profiles",  "repo",                   "repos"),
 ]
 
+
+# ── Instance directory → flat dict loader ─────────────────
+
+# Maps instance filename (without .yaml) → section key in flat ontology
+_INSTANCE_FILE_TO_SECTION = {
+    "use_case":       "use_cases",
+    "device":         "devices",
+    "model":          "models",
+    "framework":      "frameworks",
+    "api_service":    "api_services",
+    "component":      "components",
+    "repo":           "repos",
+    "setup_profile":  "setup_profiles",
+}
+
+
+def load_instances_dir(instances_dir: Path) -> dict:
+    """Load per-entity YAML files from an instances/ directory into a flat dict."""
+    ontology: dict = {}
+    for filename, section in _INSTANCE_FILE_TO_SECTION.items():
+        path = instances_dir / f"{filename}.yaml"
+        if path.exists():
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+            if data:
+                # Each file wraps its list under a plural key (e.g. models:, repos:)
+                # Try the section key first, then the filename key
+                items = data.get(section) or data.get(f"{filename}s") or data.get(filename)
+                if items and isinstance(items, list):
+                    ontology[section] = items
+    return ontology
 
 
 # ── 검증 함수 ──────────────────────────────────────────────
@@ -164,7 +210,10 @@ def check_cross_refs(ontology: dict) -> ValidationResult:
     # 섹션별 유효 ID 집합 구성
     valid_ids: dict[str, set] = {
         section: {item["id"] for item in ontology.get(section, []) if "id" in item}
-        for section in ["use_cases", "devices", "models", "frameworks"]
+        for section in [
+            "use_cases", "devices", "models", "frameworks",
+            "repos", "setup_profiles",
+        ]
     }
 
     for src_section, src_field, tgt_section in CROSS_REF_CONTRACTS:
@@ -233,7 +282,12 @@ def main():
     parser.add_argument(
         "--ontology", metavar="PATH",
         default=None,
-        help="검증할 ontology.yaml 경로 (기본: 현재 디렉토리의 ontology.yaml)",
+        help="검증할 ontology.yaml 경로 (단일 파일)",
+    )
+    parser.add_argument(
+        "--instances-dir", metavar="DIR",
+        default=None,
+        help="검증할 instances/ 디렉토리 경로 (per-entity YAML files)",
     )
     parser.add_argument("--strict", action="store_true", help="실패 시 exit 1")
     parser.add_argument("--only-refs", action="store_true", help="교차 참조만 검증")
@@ -241,17 +295,26 @@ def main():
     parser.add_argument("--section", metavar="SECTION", help="특정 섹션만 검증")
     args = parser.parse_args()
 
-    ontology_path = Path(args.ontology) if args.ontology else Path("ontology.yaml")
-    if not ontology_path.exists():
-        print(f"✗ 파일 없음: {ontology_path}")
-        sys.exit(1)
-
-    with open(ontology_path, encoding="utf-8") as f:
-        ontology = yaml.safe_load(f)
+    # Load ontology from either a single file or an instances directory
+    if args.instances_dir:
+        instances_path = Path(args.instances_dir)
+        if not instances_path.is_dir():
+            print(f"✗ 디렉토리 없음: {instances_path}")
+            sys.exit(1)
+        ontology = load_instances_dir(instances_path)
+        source_label = str(instances_path)
+    else:
+        ontology_path = Path(args.ontology) if args.ontology else Path("ontology.yaml")
+        if not ontology_path.exists():
+            print(f"✗ 파일 없음: {ontology_path}")
+            sys.exit(1)
+        with open(ontology_path, encoding="utf-8") as f:
+            ontology = yaml.safe_load(f)
+        source_label = str(ontology_path)
 
     sections = (
         [args.section] if args.section
-        else ["use_cases", "devices", "models", "frameworks", "api_services", "components"]
+        else list(REQUIRED_FIELDS.keys())
     )
 
     # --find-refs 모드
@@ -281,7 +344,7 @@ def main():
             ("교차 참조 정합성",     check_cross_refs(ontology)),
         ]
 
-    print(f"\n🔍 governance validate — {ontology_path}\n")
+    print(f"\n🔍 governance validate — {source_label}\n")
 
     for name, result in checks:
         status = "✅" if result.ok else "❌"

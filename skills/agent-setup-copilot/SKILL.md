@@ -18,7 +18,7 @@ description: >
 ## 스크립트
 
 ```
-skills/agent-setup-copilot/copilot/
+skills/agent-setup-copilot/script/
 ├── loader.py      # ontology + concepts + relations fetch → stdout
 ├── estimator.py   # 성능 추산: t/s 계산, 메모리 적합 여부, use-case 적합도
 └── transition.py  # API → 로컬 전환 시점 분석: 비용 성장, 손익분기, 최적 전환 월
@@ -31,12 +31,12 @@ skills/agent-setup-copilot/copilot/
 ### 1단계 — 온톨로지 + 컨셉 로드
 
 ```bash
-python3 skills/agent-setup-copilot/copilot/loader.py
+python3 skills/agent-setup-copilot/script/loader.py
 ```
 
 `agent-setup-ontology`의 `ontology.yaml`(인스턴스)과 `concepts.yaml`(의미 정의)을
 GitHub raw에서 fetch해 stdout에 출력한다.
-실패 시 `skills/agent-setup-copilot/copilot/bundle/`의 fallback 사용.
+실패 시 `skills/agent-setup-copilot/script/bundle/`의 fallback 사용.
 
 출력 구조:
 ```
@@ -67,16 +67,16 @@ GitHub raw에서 fetch해 stdout에 출력한다.
 
 ```bash
 # 완성품 디바이스 + 모델 조합
-python3 skills/agent-setup-copilot/copilot/estimator.py --device mac_mini_m4_32gb --model qwen3.5:35b-a3b
+python3 skills/agent-setup-copilot/script/estimator.py --device mac_mini_m4_32gb --model qwen3.5:35b-a3b
 
 # PC 빌드: GPU + RAM + 모델
-python3 skills/agent-setup-copilot/copilot/estimator.py --gpu rtx-4090 --ram-gb 64 --model qwen3.5:27b
+python3 skills/agent-setup-copilot/script/estimator.py --gpu rtx-4090 --ram-gb 64 --model qwen3.5:27b
 
 # 특정 디바이스에서 모든 모델 비교
-python3 skills/agent-setup-copilot/copilot/estimator.py --device mac_mini_m4_32gb --compare-models
+python3 skills/agent-setup-copilot/script/estimator.py --device mac_mini_m4_32gb --compare-models
 
 # 특정 모델을 모든 디바이스에서 비교
-python3 skills/agent-setup-copilot/copilot/estimator.py --model qwen3.5:9b --compare-devices
+python3 skills/agent-setup-copilot/script/estimator.py --model qwen3.5:9b --compare-devices
 ```
 
 출력 예시:
@@ -108,17 +108,17 @@ Model   : qwen3.5:35b-a3b  [MoE, 35B params]
 
 ```bash
 # 월 비용 + 성장률로 분석
-python3 skills/agent-setup-copilot/copilot/transition.py --api claude-haiku-4-5 --monthly-cost 15 --growth 10
+python3 skills/agent-setup-copilot/script/transition.py --api claude-haiku-4-5 --monthly-cost 15 --growth 10
 
 # 일 토큰 수로 계산
-python3 skills/agent-setup-copilot/copilot/transition.py --api gpt-4o-mini --tokens-per-day 80000 --growth 15
+python3 skills/agent-setup-copilot/script/transition.py --api gpt-4o-mini --tokens-per-day 80000 --growth 15
 
 # 특정 디바이스와 비교
-python3 skills/agent-setup-copilot/copilot/transition.py --api gpt-4o --monthly-cost 50 --growth 20 \
+python3 skills/agent-setup-copilot/script/transition.py --api gpt-4o --monthly-cost 50 --growth 20 \
   --device mac_mini_m4_32gb
 
 # 모든 디바이스 비교표
-python3 skills/agent-setup-copilot/copilot/transition.py --api claude-sonnet-4-6 --monthly-cost 100 \
+python3 skills/agent-setup-copilot/script/transition.py --api claude-sonnet-4-6 --monthly-cost 100 \
   --growth 25 --compare-devices
 ```
 
@@ -156,7 +156,7 @@ https://github.com/WMJOON/agent-setup-ontology
 
 온톨로지 업데이트:
 ```bash
-python3 skills/agent-setup-copilot/copilot/loader.py --update
+python3 skills/agent-setup-copilot/script/loader.py --update
 ```
 
 ---

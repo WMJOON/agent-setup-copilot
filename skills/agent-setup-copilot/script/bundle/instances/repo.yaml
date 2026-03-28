@@ -1,0 +1,162 @@
+# agent-setup-ontology — Repo Instances (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+version: "0.1.0"
+
+repos:
+
+  - id: repo-openclaw
+    label: "OpenClaw"
+    github: "openclaw/openclaw"
+    framework_ref: openclaw
+    category: automation
+    stars_approx: "40K+"
+    min_model_quality: standard
+    min_memory_gb: 16
+    ollama_compatible: true
+    install: |
+      git clone https://github.com/openclaw/openclaw
+      cd openclaw && npm install
+      cp .env.example .env
+      npm start
+
+  - id: repo-open-webui
+    label: "Open WebUI"
+    github: "open-webui/open-webui"
+    framework_ref: open-webui
+    category: ui
+    stars_approx: "80K+"
+    min_model_quality: light
+    min_memory_gb: 8
+    ollama_compatible: true
+    install: |
+      docker run -d -p 3000:8080 \
+        -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+        ghcr.io/open-webui/open-webui:main
+
+  - id: repo-smolagents
+    label: "smolagents (HuggingFace)"
+    github: "huggingface/smolagents"
+    framework_ref: smolagents
+    category: agent
+    stars_approx: "20K+"
+    min_model_quality: standard
+    min_memory_gb: 16
+    ollama_compatible: true
+    install: "pip install smolagents[ollama]"
+    quickstart: |
+      from smolagents import CodeAgent, OllamaModel, DuckDuckGoSearchTool
+      agent = CodeAgent(tools=[DuckDuckGoSearchTool()],
+                        model=OllamaModel("qwen3.5:9b"))
+      agent.run("Search and summarize today's AI news")
+
+  - id: repo-qwen-agent
+    label: "Qwen-Agent"
+    github: "QwenLM/Qwen-Agent"
+    framework_ref: qwen-agent
+    category: agent
+    stars_approx: "7K+"
+    min_model_quality: standard
+    min_memory_gb: 16
+    ollama_compatible: true
+    install: "pip install qwen-agent"
+
+  - id: repo-crewai
+    label: "CrewAI"
+    github: "crewAIInc/crewAI"
+    framework_ref: crewai
+    category: agent
+    stars_approx: "30K+"
+    min_model_quality: standard-plus
+    min_memory_gb: 32
+    ollama_compatible: true
+    install: "pip install crewai"
+
+  - id: repo-langgraph
+    label: "LangGraph"
+    github: "langchain-ai/langgraph"
+    framework_ref: langgraph
+    category: agent
+    stars_approx: "15K+"
+    min_model_quality: standard
+    min_memory_gb: 16
+    ollama_compatible: true
+    install: "pip install langgraph langchain-community"
+
+  - id: repo-autogen
+    label: "AutoGen (Microsoft)"
+    github: "microsoft/autogen"
+    framework_ref: autogen
+    category: agent
+    stars_approx: "40K+"
+    min_model_quality: standard-plus
+    min_memory_gb: 32
+    ollama_compatible: true
+    install: "pip install pyautogen"
+
+  - id: repo-agno
+    label: "Agno"
+    github: "agno-agi/agno"
+    framework_ref: agno
+    category: agent
+    stars_approx: "25K+"
+    min_model_quality: standard
+    min_memory_gb: 16
+    ollama_compatible: true
+    install: "pip install agno"
+
+  - id: repo-continue
+    label: "Continue"
+    github: "continuedev/continue"
+    framework_ref: continue
+    category: ide
+    stars_approx: "25K+"
+    min_model_quality: light
+    min_memory_gb: 8
+    ollama_compatible: true
+    install: "VSCode Marketplace → search 'Continue' → Install"
+
+  - id: repo-llamaindex
+    label: "LlamaIndex"
+    github: "run-llama/llama_index"
+    framework_ref: llamaindex
+    category: rag
+    stars_approx: "40K+"
+    min_model_quality: standard
+    min_memory_gb: 16
+    ollama_compatible: true
+    install: "pip install llama-index llama-index-llms-ollama"
+
+  - id: repo-openhands
+    label: "OpenHands (OpenDevin)"
+    github: "All-Hands-AI/OpenHands"
+    framework_ref: openhands
+    category: automation
+    stars_approx: "50K+"
+    min_model_quality: pro
+    min_memory_gb: 32
+    ollama_compatible: true
+
+  - id: repo-haystack
+    label: "Haystack (deepset)"
+    github: "deepset-ai/haystack"
+    framework_ref: haystack
+    category: rag
+    stars_approx: "20K+"
+    min_model_quality: standard
+    min_memory_gb: 16
+    ollama_compatible: true
+    install: "pip install haystack-ai ollama-haystack"
+
+  - id: repo-dify
+    label: "Dify"
+    github: "langgenius/dify"
+    framework_ref: dify
+    category: ui
+    stars_approx: "90K+"
+    min_model_quality: light
+    min_memory_gb: 8
+    ollama_compatible: true
+    install: |
+      git clone https://github.com/langgenius/dify
+      cd dify/docker && cp .env.example .env
+      docker compose up -d

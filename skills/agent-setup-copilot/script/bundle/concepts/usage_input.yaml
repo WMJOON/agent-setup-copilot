@@ -1,0 +1,33 @@
+# agent-setup-ontology — Usage Input concept definitions (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+
+version: "0.1.0"
+
+usage_input:
+  what: >
+    User-provided usage data that drives personalised transition
+    recommendations. Captures current cloud API consumption, workload
+    characteristics, and constraints so the copilot can propose an
+    optimal local setup.
+
+  fields:
+    api_service_id:
+      description: Reference to the cloud API service the user currently relies on.
+    tokens_per_day:
+      description: Average daily token consumption (in thousands) across all workloads.
+    monthly_cost_usd:
+      description: Current monthly spend on cloud LLM APIs in USD.
+    use_cases:
+      description: List of use case IDs that describe the user's primary workloads.
+    usage_intensity:
+      description: >
+        Self-reported intensity level — light (occasional queries),
+        moderate (daily professional use), heavy (continuous or batch workloads).
+    privacy_sensitive:
+      description: Whether the user's data requires on-premise processing (no cloud).
+    current_device:
+      description: Reference to the user's existing hardware, if any, for upgrade planning.
+    usage_growth_rate:
+      description: >
+        Expected monthly growth in token usage (e.g., 0.1 for 10% growth).
+        Used to project future costs and recommend appropriately sized hardware.

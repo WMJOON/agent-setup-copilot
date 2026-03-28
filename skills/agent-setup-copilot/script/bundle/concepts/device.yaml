@@ -1,0 +1,22 @@
+# agent-setup-ontology — Device concept definitions (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+
+version: "0.1.0"
+
+device:
+  what: >
+    Hardware devices suitable for local LLM inference. Ranges from
+    single-board computers to multi-GPU workstations, each classified
+    by capability tier and form factor.
+
+  fields:
+    tier:
+      description: >
+        Capability tier — light (edge/SBC), standard (consumer desktop/laptop),
+        standard-plus (high-end consumer with discrete GPU), pro (workstation/multi-GPU).
+    portability:
+      description: Whether the device is portable (laptop, mini-PC) or stationary (desktop, server).
+    always_on:
+      description: Whether the device is designed for continuous 24/7 operation.
+    max_model:
+      description: Largest model (by parameter count / quantisation) the device can run effectively.

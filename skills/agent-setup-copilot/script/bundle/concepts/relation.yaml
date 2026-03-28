@@ -1,0 +1,56 @@
+# agent-setup-ontology — Relation concept definitions (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+
+version: "0.1.0"
+
+categories:
+  compatibility:
+    label: Compatibility
+    description: Indicates that two entities can work together (device runs model, framework uses runtime).
+  equivalence:
+    label: Equivalence
+    description: Maps a cloud API model to a comparable local model.
+  transition:
+    label: Transition
+    description: Defines upgrade or migration paths between entities (API to device, device to device).
+  capability:
+    label: Capability
+    description: Links a model or device to the use cases it can fulfil.
+  requirement:
+    label: Requirement
+    description: Specifies minimum tier or resource needed for a use case or framework.
+  recommendation:
+    label: Recommendation
+    description: Curated suggestions pairing models to device tiers for optimal performance.
+
+relation_types:
+  device_runs_model:
+    category: compatibility
+    description: Device has sufficient resources to run the specified model.
+  framework_uses_runtime:
+    category: compatibility
+    description: Framework can connect to and use the specified inference runtime.
+  api_equivalent_local:
+    category: equivalence
+    description: Cloud API model has a comparable local model alternative.
+  api_transitions_to_device:
+    category: transition
+    description: Recommended device for users migrating off a specific cloud API tier.
+  device_upgrades_to:
+    category: transition
+    description: Natural hardware upgrade path from one device to another.
+  model_enables_use_case:
+    category: capability
+    description: Model quality is sufficient to satisfy the given use case.
+  device_supports_use_case:
+    category: capability
+    description: Device can run models that fulfil the given use case.
+  use_case_requires_tier:
+    category: requirement
+    description: Minimum device tier needed to run this use case effectively.
+  framework_suits_use_case:
+    category: capability
+    description: Framework provides appropriate tooling for the given use case.
+  model_sweet_spot_for_tier:
+    category: recommendation
+    description: Model is the best balance of quality and speed on the specified device tier.

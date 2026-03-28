@@ -6,7 +6,7 @@ Ask in your terminal: "What should I buy to run OpenClaw?" or "When should I swi
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> Ontology data (devices, models, frameworks, cost info) is maintained in
+> Ontology data (devices, models, frameworks, repos, setup profiles, cost info) is maintained in
 > **[agent-setup-ontology](https://github.com/WMJOON/agent-setup-ontology)**.
 
 ---
@@ -17,9 +17,11 @@ Recommends the right local AI agent stack based on your goal, budget, and curren
 
 - **Device recommendation** — given your use case, which Mac or PC build to buy
 - **Model + framework pairing** — which Ollama model and framework fit your needs
+- **Repo setup guide** — install commands and quickstart code for each framework
+- **Setup profiles** — curated end-to-end configurations (single or multi-device)
 - **Cost analysis** — estimated API spend vs local hardware break-even
 - **Transition timing** — when to switch from cloud API to local setup based on usage growth
-- **Performance estimates** — tokens/sec for any device × model combination
+- **Performance estimates** — tokens/sec for any device x model combination
 
 Powered by Claude Code. No Ollama or API key needed to run the advisor itself.
 
@@ -38,6 +40,8 @@ That's it. Ask Claude Code directly:
 "I have a Mac Mini M4 32GB — what agent stack should I use?"
 "I spend $20/month on Claude Haiku. When should I go local?"
 "How fast is qwen3.5:35b-a3b on my device?"
+"How do I set up OpenClaw?"
+"Compare AutoGen vs CrewAI for multi-agent pipelines"
 ```
 
 ---
@@ -46,15 +50,15 @@ That's it. Ask Claude Code directly:
 
 | Script | Purpose |
 |--------|---------|
-| `copilot/loader.py` | Fetch ontology + concepts + relations from SOT |
-| `copilot/estimator.py` | Estimate tokens/second for device × model |
-| `copilot/transition.py` | Calculate optimal API → local transition month |
+| `skills/agent-setup-copilot/script/loader.py` | Fetch concepts + instances from SOT |
+| `skills/agent-setup-copilot/script/estimator.py` | Estimate tokens/second for device x model |
+| `skills/agent-setup-copilot/script/transition.py` | Calculate optimal API -> local transition month |
 
 ```bash
 # Examples (run directly or via Claude Code)
-python3 copilot/loader.py --update
-python3 copilot/estimator.py --device mac_mini_m4_32gb --compare-models
-python3 copilot/transition.py --api claude-haiku-4-5 --monthly-cost 15 --growth 10
+python3 skills/agent-setup-copilot/script/loader.py --update
+python3 skills/agent-setup-copilot/script/estimator.py --device mac_mini_m4_32gb --compare-models
+python3 skills/agent-setup-copilot/script/transition.py --api claude-haiku-4-5 --monthly-cost 15 --growth 10
 ```
 
 ---
@@ -66,17 +70,20 @@ The schema contract (required fields, types, enums) that
 lives in [`governance/`](governance/).
 
 ```bash
-# Validate ontology against contract
+# Validate ontology against contract (single file)
 python governance/scripts/validate.py --ontology path/to/ontology.yaml --strict
+
+# Validate per-entity instance directory
+python governance/scripts/validate.py --instances-dir path/to/instances/ --strict
 ```
 
 ---
 
 ## Contributing to the ontology
 
-To add devices, models, or frameworks, open a PR on
+To add devices, models, frameworks, or repos, open a PR on
 **[agent-setup-ontology](https://github.com/WMJOON/agent-setup-ontology)**.
-No code knowledge required — just edit `ontology.yaml`.
+No code knowledge required — just edit the relevant file in `instances/`.
 
 ---
 

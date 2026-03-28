@@ -1,0 +1,59 @@
+# agent-setup-ontology — Relation Instances (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+version: "0.1.0"
+
+instances:
+  upgrade_paths:
+    macbook:
+    - from: macbook_air_8gb
+      to: macbook_16gb
+      reason: 16GB unlocks 9B models and most single-agent use cases.
+    - from: macbook_16gb
+      to: macbook_pro_32gb
+      reason: 32GB unlocks MoE 35B-class models and multi-agent workflows.
+    mac_mini:
+    - from: mac_mini_16gb
+      to: mac_mini_m4_32gb
+      reason: Same form factor. 32GB unlocks 35b-a3b at ~$150 more.
+    - from: mac_mini_m4_32gb
+      to: mac_mini_pro_48gb
+      reason: M4 Pro doubles bandwidth. 48GB unlocks 72B models.
+    pc:
+    - from: pc_no_gpu
+      to: pc_rtx4060
+      reason: RTX 4060 8GB (~$300) enables 9B model at 5-10x CPU speed.
+    - from: pc_rtx4060
+      to: pc_rtx4090
+      reason: 24GB VRAM unlocks 32B dense models and LoRA fine-tuning.
+
+  api_to_local_paths:
+  - from_api: gpt-4o-mini
+    quality: standard
+    local_model: qwen3.5:9b
+    min_device: mac_mini_16gb
+    recommended_device: mac_mini_m4_32gb
+  - from_api: gemini-2-flash
+    quality: standard
+    local_model: qwen3.5:9b
+    min_device: mac_mini_16gb
+    recommended_device: mac_mini_m4_32gb
+  - from_api: claude-haiku-4-5
+    quality: standard
+    local_model: qwen3.5:9b
+    min_device: mac_mini_16gb
+    recommended_device: mac_mini_m4_32gb
+  - from_api: gpt-4o
+    quality: pro
+    local_model: qwen3.5:35b-a3b
+    min_device: mac_mini_m4_32gb
+    recommended_device: mac_mini_pro_48gb
+  - from_api: gemini-2-pro
+    quality: pro
+    local_model: qwen3.5:35b-a3b
+    min_device: mac_mini_m4_32gb
+    recommended_device: mac_mini_pro_48gb
+  - from_api: claude-sonnet-4-6
+    quality: pro
+    local_model: qwen3.5:35b-a3b
+    min_device: mac_mini_m4_32gb
+    recommended_device: mac_mini_pro_48gb

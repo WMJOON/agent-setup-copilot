@@ -1,0 +1,25 @@
+# agent-setup-ontology — Model concept definitions (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+
+version: "0.1.0"
+
+model:
+  what: >
+    Local LLM models run via Ollama. Each model is characterised by its
+    architecture, quality tier, and suitability for specific tasks.
+
+  fields:
+    type:
+      description: >
+        Architecture type — dense (standard transformer), MoE (mixture-of-experts),
+        or reasoning (chain-of-thought optimised).
+    quality:
+      description: >
+        Quality tier indicating overall capability (e.g., good, great, excellent).
+        Higher tiers require more resources.
+    tool_calling:
+      description: Whether the model supports structured tool/function calling.
+    sweet_spot:
+      description: >
+        The device tier where this model runs best — balances speed, quality,
+        and resource usage for practical daily use.

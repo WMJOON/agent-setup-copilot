@@ -19,9 +19,29 @@ agent-setup-copilot/          ← contract owner (this repo)
 └── skills/agent-setup-copilot/SKILL.md
 
 agent-setup-ontology/         ← data provider
-├── ontology.yaml             ← data conforming to this contract
-├── concepts.yaml             ← semantic definitions
-└── skills/ontology-harness/SKILL.md   ← references this governance
+├── concepts/                 ← semantic definitions (what fields mean)
+│   ├── use_case.yaml
+│   ├── device.yaml
+│   ├── model.yaml
+│   ├── framework.yaml
+│   ├── api_service.yaml
+│   ├── component.yaml
+│   ├── repo.yaml
+│   ├── setup_profile.yaml
+│   ├── cost_estimation.yaml
+│   ├── usage_input.yaml
+│   └── relation.yaml
+├── instances/                ← instance data conforming to this contract
+│   ├── use_case.yaml
+│   ├── device.yaml
+│   ├── model.yaml
+│   ├── framework.yaml
+│   ├── api_service.yaml
+│   ├── component.yaml
+│   ├── repo.yaml
+│   ├── setup_profile.yaml
+│   └── relation.yaml
+└── skills/ontology-harness/SKILL.md
 ```
 
 ```mermaid
@@ -30,7 +50,7 @@ flowchart LR
     ONTOLOGY["agent-setup-ontology<br/>(data provider)"]
 
     COPILOT -->|"defines contract\ngovernance/schema.json"| ONTOLOGY
-    ONTOLOGY -->|"provides data\nontology.yaml + concepts.yaml"| COPILOT
+    ONTOLOGY -->|"provides data\nconcepts/ + instances/"| COPILOT
 ```
 
 ---
@@ -53,7 +73,7 @@ flowchart LR
 |-------|------|-------------|
 | `id` | string | Unique identifier |
 | `label` | string | Human-readable name |
-| `type` | enum | `macbook` \| `mac-mini` \| `mac-studio` \| `pc` \| `other` |
+| `type` | enum | `macbook` \| `mac-mini` \| `mac-studio` \| `pc` \| `ai-supercomputer` \| `other` |
 | `memory_gb` | integer | Unified/system memory in GB |
 | `tier` | enum | `light` \| `standard` \| `standard-plus` \| `pro` |
 | `max_model` | string | Most capable model that runs comfortably (references models[*].id) |
@@ -65,7 +85,7 @@ flowchart LR
 | `id` | string | Ollama model tag (e.g. `qwen3.5:9b`) |
 | `label` | string | Human-readable name |
 | `params_b` | number | Total parameter count in billions |
-| `type` | enum | `dense` \| `MoE` |
+| `type` | enum | `dense` \| `MoE` \| `reasoning` |
 | `min_memory_gb` | integer | Minimum RAM to run |
 | `quality` | enum | `light` \| `standard` \| `standard-plus` \| `pro` |
 | `tool_calling` | boolean | Supports tool/function calling |
@@ -85,11 +105,11 @@ flowchart LR
 
 | Value | Meaning | Examples |
 |-------|---------|---------|
-| `agent` | General-purpose agent framework | smolagents, CrewAI, LangGraph, qwen-agent |
-| `automation` | Browser / file / code automation wrapper | OpenClaw |
-| `ui` | Chat or web UI front-end | Open WebUI, AnythingLLM |
+| `agent` | General-purpose agent framework | smolagents, CrewAI, LangGraph, qwen-agent, AutoGen, Agno |
+| `automation` | Browser / file / code automation wrapper | OpenClaw, OpenHands |
+| `ui` | Chat or web UI front-end | Open WebUI, AnythingLLM, Dify |
 | `ide` | IDE / editor integration | Continue (VSCode) |
-| `rag` | RAG-focused retrieval framework | LlamaIndex |
+| `rag` | RAG-focused retrieval framework | LlamaIndex, Haystack |
 
 #### `runtime_support` allowed values
 
@@ -135,6 +155,37 @@ flowchart LR
 | `local_alternative` | string | Comparable local model — references `models[*].id` |
 | `note` | string | One-line description |
 
+### repos
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier (e.g. `repo-openclaw`) |
+| `label` | string | Human-readable name |
+| `github` | string | GitHub `owner/repo` path |
+| `framework_ref` | string | References `frameworks[*].id` |
+| `category` | enum | Same as `frameworks.kind`: `agent` \| `automation` \| `ui` \| `ide` \| `rag` |
+| `stars_approx` | string | Approximate GitHub star count |
+| `min_model_quality` | enum | Minimum model quality tier |
+| `min_memory_gb` | integer | Minimum RAM required |
+| `ollama_compatible` | boolean | Works with local Ollama models |
+| `install` | string | Shell commands to install |
+| `quickstart` | string | Minimal working code snippet |
+
+### setup_profiles
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier (e.g. `setup-mac-mini-openclaw`) |
+| `label` | string | Human-readable profile name |
+| `devices` | string[] | Device IDs in this setup (references `devices[*].id`) |
+| `roles` | object | Multi-device: role description per device |
+| `model` / `model_light` / `model_heavy` | string | Model(s) used |
+| `framework` | string | References `frameworks[*].id` |
+| `repo` | string | References `repos[*].id` |
+| `use_cases` | string[] \| "all" | Supported use cases |
+| `complexity` | enum | `low` \| `medium` \| `high` |
+| `setup_steps` | string[] | Ordered install/setup commands |
+
 ---
 
 ## Cross-Reference Contract
@@ -149,6 +200,8 @@ flowchart LR
     M["model"]
     F["framework"]
     API["api_service"]
+    R["repo"]
+    SP["setup_profile"]
 
     D   -->|"supported_use_cases[]"| UC
     D   -->|"max_model"| M
@@ -156,6 +209,10 @@ flowchart LR
     UC  -->|"recommended_frameworks[]"| F
     API -->|"local_alternative"| M
     C["component"] -->|"inference_tier (concept ref)"| TIER["device_tier concept"]
+    R   -->|"framework_ref"| F
+    SP  -->|"devices[]"| D
+    SP  -->|"framework"| F
+    SP  -->|"repo"| R
 ```
 
 ---
@@ -164,7 +221,7 @@ flowchart LR
 
 ```
 Allowed:  [a-z0-9_.:- ]
-Examples: mac_mini_m4_32gb  /  qwen3.5:9b  /  smolagents  /  openclaw
+Examples: mac_mini_m4_32gb  /  qwen3.5:9b  /  smolagents  /  repo-openclaw  /  setup-mac-mini-openclaw
 ```
 
 ---
@@ -172,14 +229,16 @@ Examples: mac_mini_m4_32gb  /  qwen3.5:9b  /  smolagents  /  openclaw
 ## Enum Contract Summary
 
 ```
-device.type:          macbook | mac-mini | mac-studio | pc | other
+device.type:          macbook | mac-mini | mac-studio | pc | ai-supercomputer | other
 device.tier:          light | standard | standard-plus | pro
 device.portability:   portable | stationary
-model.type:           dense | MoE
+model.type:           dense | MoE | reasoning
 model.quality:        light | standard | standard-plus | pro
 framework.kind:       agent | automation | ui | ide | rag
 framework.complexity: low | medium | high
 framework.runtime_support[]: ollama | openai | anthropic | huggingface | litellm | any
+repo.category:        agent | automation | ui | ide | rag
+setup_profile.complexity: low | medium | high
 ```
 
 ---
@@ -191,16 +250,19 @@ framework.runtime_support[]: ollama | openai | anthropic | huggingface | litellm
 1. Open a PR on this repo to update `schema.json` + `GOVERNANCE.md`
 2. Merge after review
 3. Open an issue on `agent-setup-ontology` to notify the change
-4. Update `ontology.yaml` in the ontology repo and pass CI (consumer validate)
+4. Update instance files in the ontology repo and pass CI (consumer validate)
 
 ---
 
 ## Running Validation
 
 ```bash
-# Run locally
+# Run locally (flat ontology file)
 pip install pyyaml jsonschema
 python governance/scripts/validate.py --ontology path/to/ontology.yaml
+
+# Run against per-entity instance directory
+python governance/scripts/validate.py --instances-dir path/to/instances/
 
 # Strict mode (exit 1 on failure) — used in CI
 python governance/scripts/validate.py --ontology ontology.yaml --strict

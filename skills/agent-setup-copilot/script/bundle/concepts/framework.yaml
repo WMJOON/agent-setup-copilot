@@ -1,0 +1,25 @@
+# agent-setup-ontology — Framework concept definitions (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+
+version: "0.1.0"
+
+framework:
+  what: >
+    Agent frameworks and tools used to build, orchestrate, or interact
+    with local AI agents. Covers the full spectrum from simple chat UIs
+    to multi-agent orchestration platforms.
+
+  fields:
+    kind:
+      description: >
+        Category of framework — agent (autonomous agent builders), automation
+        (workflow/task automation), ui (chat and playground interfaces),
+        ide (code-assistant integrations), rag (retrieval-augmented generation pipelines).
+    complexity:
+      description: >
+        Setup and usage complexity (low, medium, high). Indicates how much
+        configuration and technical knowledge is needed to get started.
+    runtime_support:
+      description: >
+        Supported model runtimes (e.g., ollama, llama.cpp, vllm). Determines
+        which local inference backends the framework can connect to.

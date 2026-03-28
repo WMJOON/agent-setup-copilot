@@ -1,0 +1,24 @@
+# agent-setup-ontology — Repo concept definitions (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+
+version: "0.1.0"
+
+repo:
+  what: >
+    Key open-source GitHub repositories for building local AI agent setups.
+    Each repo entry links a project to its framework, minimum model requirements,
+    and quick-start instructions.
+
+  fields:
+    framework_ref:
+      description: Reference to the framework entity this repository implements or extends.
+    min_model_quality:
+      description: >
+        Minimum model quality tier needed for the repo's tooling to work
+        effectively (e.g., good, great).
+    install:
+      description: Brief installation instructions or command (e.g., pip install, docker compose).
+    quickstart:
+      description: >
+        Condensed getting-started steps so users can have the tool running
+        with a local model in minutes.

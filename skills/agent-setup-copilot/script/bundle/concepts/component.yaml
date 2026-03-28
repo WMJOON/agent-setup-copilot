@@ -1,0 +1,24 @@
+# agent-setup-ontology — Component concept definitions (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+
+version: "0.1.0"
+
+component:
+  what: >
+    Individual hardware parts for PC builds focused on local AI inference.
+    Components are selected and combined to assemble devices that meet
+    specific inference tier requirements.
+
+  fields:
+    component_type:
+      description: >
+        The hardware category — gpu (graphics card for inference acceleration),
+        cpu (processor for dense/MoE workloads), memory (RAM capacity and speed).
+    inference_tier:
+      description: >
+        The device tier this component enables or contributes to
+        (light, standard, standard-plus, pro).
+    price_search_query:
+      description: >
+        Pre-built search query string for looking up current retail prices
+        of this component across major vendors.

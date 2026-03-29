@@ -53,12 +53,14 @@ That's it. Ask Claude Code directly:
 | `skills/agent-setup-copilot/script/loader.py` | Fetch concepts + instances from SOT |
 | `skills/agent-setup-copilot/script/estimator.py` | Estimate tokens/second for device x model |
 | `skills/agent-setup-copilot/script/transition.py` | Calculate optimal API -> local transition month |
+| `skills/agent-setup-copilot/script/deo_resolver.py` | DEO constraint-aware setup path resolver |
 
 ```bash
 # Examples (run directly or via Claude Code)
 python3 skills/agent-setup-copilot/script/loader.py --update
 python3 skills/agent-setup-copilot/script/estimator.py --device mac_mini_m4_32gb --compare-models
 python3 skills/agent-setup-copilot/script/transition.py --api claude-haiku-4-5 --monthly-cost 15 --growth 10
+python3 skills/agent-setup-copilot/script/deo_resolver.py --query "fast agent without docker" --goal web_automation
 ```
 
 ---

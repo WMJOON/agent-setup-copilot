@@ -106,16 +106,39 @@ class TransitionAnalysis:
 
 # ── Data loading ───────────────────────────────────────────────────────────
 
+_INSTANCE_ENTITIES = [
+    "use_case", "device", "model", "framework",
+    "api_service", "component", "repo", "setup_profile",
+]
+_SECTION_MAP = {
+    "use_case": "use_cases", "device": "devices", "model": "models",
+    "framework": "frameworks", "api_service": "api_services",
+    "component": "components", "repo": "repos", "setup_profile": "setup_profiles",
+}
+
+
 def load_ontology() -> dict:
-    for path in [
-        Path.home() / ".cache" / "agent-setup-copilot" / "ontology.yaml",
-        Path(__file__).parent / "bundle" / "ontology.yaml",
-    ]:
-        if path.exists():
-            return yaml.safe_load(path.read_text(encoding="utf-8"))
-    raise FileNotFoundError(
-        "ontology.yaml not found. Run: python3 copilot/loader.py --update"
-    )
+    onto: dict = {}
+    for entity in _INSTANCE_ENTITIES:
+        section = _SECTION_MAP[entity]
+        fname = f"instances/{entity}.yaml"
+        for base in [
+            Path.home() / ".cache" / "agent-setup-copilot",
+            Path(__file__).parent / "bundle",
+        ]:
+            path = base / fname
+            if path.exists():
+                data = yaml.safe_load(path.read_text(encoding="utf-8"))
+                items = (data.get(section) or data.get(f"{entity}s") or []) if data else []
+                if items:
+                    onto[section] = items
+                break
+    if not onto:
+        raise FileNotFoundError(
+            "No ontology data found. Run: "
+            "python3 skills/agent-setup-copilot/script/loader.py --update"
+        )
+    return onto
 
 # ── Cost functions ─────────────────────────────────────────────────────────
 

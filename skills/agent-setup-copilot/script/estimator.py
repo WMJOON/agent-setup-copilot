@@ -45,20 +45,52 @@ TPS_EXCELLENT   = 50
 
 # ── Data loading ───────────────────────────────────────────────────────────
 
-def _load(fname: str) -> dict:
-    for path in [
-        Path.home() / ".cache" / "agent-setup-copilot" / fname,
-        Path(__file__).parent / "bundle" / fname,
+_INSTANCE_ENTITIES = [
+    "use_case", "device", "model", "framework",
+    "api_service", "component", "repo", "setup_profile",
+]
+
+_SECTION_MAP = {
+    "use_case": "use_cases", "device": "devices", "model": "models",
+    "framework": "frameworks", "api_service": "api_services",
+    "component": "components", "repo": "repos", "setup_profile": "setup_profiles",
+}
+
+
+def _read_yaml(path: Path) -> dict:
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def _load_instance(entity: str) -> list:
+    """Load one entity list from cache or bundle."""
+    fname = f"instances/{entity}.yaml"
+    for base in [
+        Path.home() / ".cache" / "agent-setup-copilot",
+        Path(__file__).parent / "bundle",
     ]:
+        path = base / fname
         if path.exists():
-            return yaml.safe_load(path.read_text(encoding="utf-8"))
-    raise FileNotFoundError(
-        f"{fname} not found. Run: python3 copilot/loader.py --update"
-    )
+            data = _read_yaml(path)
+            section = _SECTION_MAP[entity]
+            # file may wrap list under plural key
+            return (data.get(section) or data.get(f"{entity}s") or []) if data else []
+    return []
 
 
 def load_ontology() -> dict:
-    return _load("ontology.yaml")
+    """Assemble flat ontology dict from per-entity instance files."""
+    onto: dict = {}
+    for entity in _INSTANCE_ENTITIES:
+        section = _SECTION_MAP[entity]
+        items = _load_instance(entity)
+        if items:
+            onto[section] = items
+    if not onto:
+        raise FileNotFoundError(
+            "No ontology data found. Run: "
+            "python3 skills/agent-setup-copilot/script/loader.py --update"
+        )
+    return onto
 
 # ── Core estimation functions ──────────────────────────────────────────────
 

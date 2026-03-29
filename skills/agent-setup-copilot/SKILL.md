@@ -21,9 +21,10 @@ description: >
 
 ```
 skills/agent-setup-copilot/script/
-├── loader.py      # concepts/ + instances/ fetch → stdout
-├── estimator.py   # 성능 추산: t/s 계산, 메모리 적합 여부, use-case 적합도
-└── transition.py  # API → 로컬 전환 시점 분석: 비용 성장, 손익분기, 최적 전환 월
+├── loader.py        # concepts/ + instances/ fetch → stdout
+├── estimator.py     # 성능 추산: t/s 계산, 메모리 적합 여부, use-case 적합도
+├── transition.py    # API → 로컬 전환 시점 분석: 비용 성장, 손익분기, 최적 전환 월
+└── deo_resolver.py  # DEO 기반 제약 조건 추론 엔진: positive/negative/constraint 분리 → 최적 경로 선택
 ```
 
 ---
@@ -147,8 +148,14 @@ PROPOSE 진입 전 슬롯 요약을 출력하고 확인받는다:
 **스크립트 호출 순서:**
 
 1. 항상: `python3 skills/agent-setup-copilot/script/loader.py`
-2. 성능 확인 필요 시: `python3 skills/agent-setup-copilot/script/estimator.py`
-3. 전환 시점 필요 시 (Optimizer): `python3 skills/agent-setup-copilot/script/transition.py`
+2. **제약 기반 추론 (DEO)**: `python3 skills/agent-setup-copilot/script/deo_resolver.py`
+   - INTAKE에서 수집한 슬롯(goal, constraint)과 사용자 발화를 구조화하여 호출
+   - `--query "사용자 원문"` + `--goal <use_case_id>` + `--constraint <조건>`
+   - 또는 `--json '{"positive":[...], "negative":[...], "constraints":{"hard":[...], "soft":[...]}}'`
+   - 결과: 제약 조건을 모두 만족하는 top-3 setup path + 제외 사유 + reasoning trace
+   - **negative constraint가 있으면 반드시 이 스크립트를 호출해야 한다**
+3. 성능 확인 필요 시: `python3 skills/agent-setup-copilot/script/estimator.py`
+4. 전환 시점 필요 시 (Optimizer): `python3 skills/agent-setup-copilot/script/transition.py`
 
 **유형별 출력 형식:**
 
@@ -208,6 +215,62 @@ Explorer 형식 + transition.py 결과 비용 비교표 포함.
 2. "[현재 맥락에서 자연스러운 질문]"
 3. "[현재 맥락에서 자연스러운 질문]"
 ```
+
+---
+
+## DEO 기반 제약 추론 규칙
+
+PROPOSE 단계에서 추천 옵션을 생성할 때, 다음 규칙을 따른다:
+
+### 핵심 원칙
+
+1. **유사도만으로 선택하지 않는다** — 제약 조건을 우선한다.
+2. **Negative constraint를 반드시 반영한다** — 사용자가 "docker 없이", "GPU 없이" 등을 말하면 해당 경로는 즉시 제거.
+3. **reasoning은 반드시 포함한다** — 왜 이 옵션을 선택했고, 왜 다른 옵션을 제외했는지 설명.
+
+### Query Decomposition
+
+사용자 발화를 INTAKE 슬롯과 결합하여 아래 구조로 분해한다:
+
+```
+positive:  사용자가 원하는 것 (기술 스택, 목적, 성능)
+negative:  명시적 배제 ("without X", "X 없이", "X 빼고")
+hard:      반드시 지켜야 하는 조건 (위반 시 경로 즉시 제거)
+soft:      가능하면 반영하되 필수가 아닌 조건 (penalty 부과)
+```
+
+### Scoring
+
+```
+score(node) = sim(query_positive, node_positive)
+            - sim(query_negative, node_positive)
+            - sim(query_positive, node_negative)
+
+score(path) = Σ node_scores - soft_constraint_penalty
+```
+
+Hard constraint 위반 시 해당 경로는 score 계산 없이 즉시 제거된다.
+
+### deo_resolver.py 호출 예시
+
+```bash
+# 자연어 입력
+python3 skills/agent-setup-copilot/script/deo_resolver.py \
+  --query "web automation server, always on, without docker" \
+  --goal web_automation
+
+# 구조화 입력
+python3 skills/agent-setup-copilot/script/deo_resolver.py \
+  --json '{"positive":["web_automation","always_on"],"negative":["docker"],"constraints":{"hard":["no_docker"],"soft":["prefer_mac"]}}'
+```
+
+### 출력 활용
+
+deo_resolver.py의 출력(JSON)에서:
+- `decision.selected_path` → 옵션 A/B/C의 기초 데이터
+- `decision.excluded_options` → 제외 사유 설명에 활용
+- `decision.reasoning` → 추천 근거 요약
+- `meta.query_decomposition` → 사용자 의도 해석 확인
 
 ---
 

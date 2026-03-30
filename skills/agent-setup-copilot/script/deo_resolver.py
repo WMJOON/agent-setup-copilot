@@ -100,6 +100,53 @@ def load_ontology() -> dict:
                 if items:
                     onto[section] = items
                 break
+
+    # relation-derived indexes (optional but highly useful)
+    rel_indexes: dict[str, Any] = {}
+    relation_instances = onto.get("instances", {}) or {}
+    if isinstance(relation_instances, dict):
+        fw_map = relation_instances.get("framework_use_cases", {}) or {}
+        model_notes = relation_instances.get("model_use_case_notes", []) or []
+        profile_notes = relation_instances.get("setup_profile_notes", []) or []
+        adjacency = relation_instances.get("use_case_adjacency", []) or []
+
+        use_case_to_framework: dict[str, dict[str, list[dict[str, str]]]] = {}
+        for fw_id, mapping in fw_map.items():
+            for fit_kind in ("strong_fit", "weak_fit"):
+                for row in mapping.get(fit_kind, []) or []:
+                    uc = row.get("use_case")
+                    if not uc:
+                        continue
+                    bucket = use_case_to_framework.setdefault(uc, {"strong_fit": [], "weak_fit": []})
+                    bucket.setdefault(fit_kind, []).append({"framework": fw_id, "reason": row.get("reason", "")})
+
+        use_case_to_model: dict[str, list[dict[str, str]]] = {}
+        for row in model_notes:
+            uc = row.get("use_case")
+            if uc:
+                use_case_to_model.setdefault(uc, []).append(row)
+
+        use_case_to_profile: dict[str, list[dict[str, str]]] = {}
+        for row in profile_notes:
+            uc = row.get("use_case")
+            if uc:
+                use_case_to_profile.setdefault(uc, []).append(row)
+
+        use_case_graph: dict[str, list[dict[str, str]]] = {}
+        for row in adjacency:
+            src = row.get("from")
+            if src:
+                use_case_graph.setdefault(src, []).append(row)
+
+        rel_indexes = {
+            "use_case_to_framework": use_case_to_framework,
+            "use_case_to_model": use_case_to_model,
+            "use_case_to_profile": use_case_to_profile,
+            "use_case_graph": use_case_graph,
+        }
+
+    onto["relation_indexes"] = rel_indexes
+
     if not onto:
         raise FileNotFoundError(
             "No ontology data found. Run: "
@@ -548,17 +595,76 @@ def _framework_supports_use_case(framework: dict, use_case_id: str) -> bool:
     return use_case_id in best_for
 
 
+def _relation_fit_bonus(query: DecomposedQuery, ontology: dict, node: OntologyNode) -> float:
+    indexes = ontology.get("relation_indexes", {}) or {}
+    goal = query.positive[0] if query.positive else None
+    bonus = 0.0
+    if not goal:
+        return bonus
+
+    if node.kind == "framework":
+        mapping = (indexes.get("use_case_to_framework", {}) or {}).get(goal, {})
+        for row in mapping.get("strong_fit", []) or []:
+            if row.get("framework") == node.id:
+                bonus += 0.6
+        for row in mapping.get("weak_fit", []) or []:
+            if row.get("framework") == node.id:
+                bonus -= 0.3
+
+    elif node.kind == "model":
+        for row in (indexes.get("use_case_to_model", {}) or {}).get(goal, []) or []:
+            if row.get("model") == node.id:
+                fit = row.get("fit")
+                if fit == "strong":
+                    bonus += 0.6
+                elif fit == "standard":
+                    bonus += 0.3
+                elif fit == "weak":
+                    bonus -= 0.2
+                elif fit == "none":
+                    bonus -= 1.0
+
+    elif node.kind == "setup_profile":
+        for row in (indexes.get("use_case_to_profile", {}) or {}).get(goal, []) or []:
+            if row.get("profile") == node.id:
+                fit = row.get("fit", "strong")
+                if fit == "strong":
+                    bonus += 0.8
+                elif fit == "standard":
+                    bonus += 0.4
+                elif fit == "weak":
+                    bonus -= 0.2
+
+    elif node.kind == "use_case":
+        for row in (indexes.get("use_case_graph", {}) or {}).get(node.id, []) or []:
+            if row.get("to") == goal:
+                bonus += 0.2
+
+    return bonus
+
+
 def build_paths_from_profiles(
     query: DecomposedQuery, nodes: list[OntologyNode], ontology: dict
 ) -> list[SetupPath]:
-    """Build paths from curated setup_profiles."""
+    """Build paths from curated setup_profiles, preferring relation-aligned profiles first."""
     paths: list[SetupPath] = []
     profiles = [n for n in nodes if n.kind == "setup_profile"]
     devices_by_id = {n.id: n for n in nodes if n.kind == "device"}
     models_by_id = {n.id: n for n in nodes if n.kind == "model"}
     frameworks_by_id = {n.id: n for n in nodes if n.kind == "framework"}
 
-    for prof in profiles:
+    goal = query.positive[0] if query.positive else None
+    profile_rows = []
+    if goal:
+        profile_rows = (ontology.get("relation_indexes", {}) or {}).get("use_case_to_profile", {}).get(goal, []) or []
+    preferred_profile_ids = {row.get("profile") for row in profile_rows if row.get("profile")}
+
+    ordered_profiles = sorted(
+        profiles,
+        key=lambda p: (p.id not in preferred_profile_ids, p.id)
+    )
+
+    for prof in ordered_profiles:
         path = SetupPath(profile=prof)
 
         # Link components
@@ -577,6 +683,7 @@ def build_paths_from_profiles(
 
         for component in path.components:
             total_score += score_node(query, component)
+            total_score += _relation_fit_bonus(query, ontology, component)
             all_violations.extend(check_hard_constraints(query, component))
             total_penalty += check_soft_constraints(query, component)
 
@@ -621,8 +728,11 @@ def build_paths_combinatorial(
                 path = SetupPath(device=dev, model=mod, framework=fw)
                 total_score = (
                     score_node(query, dev)
+                    + _relation_fit_bonus(query, ontology, dev)
                     + score_node(query, mod)
+                    + _relation_fit_bonus(query, ontology, mod)
                     + score_node(query, fw)
+                    + _relation_fit_bonus(query, ontology, fw)
                 )
                 all_violations: list[str] = []
                 total_penalty = 0.0
@@ -648,14 +758,48 @@ class Resolution:
     all_paths_count: int
 
 
+def _expand_goal_candidates(query: DecomposedQuery, ontology: dict) -> list[str]:
+    if not query.positive:
+        return []
+    primary = query.positive[0]
+    graph = (ontology.get("relation_indexes", {}) or {}).get("use_case_graph", {}) or {}
+    candidates = [primary]
+    for row in graph.get(primary, []) or []:
+        dst = row.get("to")
+        if dst and dst not in candidates:
+            candidates.append(dst)
+    for src, rows in graph.items():
+        for row in rows or []:
+            if row.get("to") == primary and src not in candidates:
+                candidates.append(src)
+    return candidates
+
+
 def resolve(query: DecomposedQuery, ontology: dict, top_k: int = TOP_K) -> Resolution:
     """Run the full DEO resolution pipeline."""
     nodes = build_nodes(ontology)
 
+    goal_candidates = _expand_goal_candidates(query, ontology)
+
     # Build candidate paths from both profiles and combinatorial
     profile_paths = build_paths_from_profiles(query, nodes, ontology)
     combo_paths = build_paths_combinatorial(query, nodes, ontology)
-    all_paths = profile_paths + combo_paths
+
+    # Prefer curated profile paths when ontology has explicit profile guidance
+    if goal_candidates:
+        profile_related_ids = set()
+        rel_indexes = ontology.get("relation_indexes", {}) or {}
+        for goal in goal_candidates:
+            for row in (rel_indexes.get("use_case_to_profile", {}) or {}).get(goal, []) or []:
+                pid = row.get("profile")
+                if pid:
+                    profile_related_ids.add(pid)
+
+        promoted_profiles = [p for p in profile_paths if p.profile and p.profile.id in profile_related_ids]
+        remaining_profiles = [p for p in profile_paths if not (p.profile and p.profile.id in profile_related_ids)]
+        all_paths = promoted_profiles + remaining_profiles + combo_paths
+    else:
+        all_paths = profile_paths + combo_paths
 
     # Partition into valid and excluded
     valid = [p for p in all_paths if p.is_valid]
@@ -664,9 +808,10 @@ def resolve(query: DecomposedQuery, ontology: dict, top_k: int = TOP_K) -> Resol
     # Sort valid paths by net score (descending)
     valid.sort(key=lambda p: -p.net_score)
 
-    # Deduplicate: avoid recommending same device+model twice
+    # Deduplicate: prefer curated profiles over raw combinations for same stack
     seen: set[str] = set()
     deduped: list[SetupPath] = []
+    valid.sort(key=lambda p: (0 if p.profile else 1, -p.net_score))
     for p in valid:
         key = (
             (p.device.id if p.device else "")

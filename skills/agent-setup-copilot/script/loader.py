@@ -85,8 +85,69 @@ for entity in _CONCEPTS_ONLY:
     )
 
 
+def _build_relation_indexes(data: dict[str, dict]) -> dict:
+    rel = data.get("instances/relation", {}) or {}
+    inst = rel.get("instances", {}) or {}
+
+    framework_to_use_case: dict = {}
+    use_case_to_framework: dict = {}
+    profile_to_use_case: dict = {}
+    use_case_to_profile: dict = {}
+    model_to_use_case: dict = {}
+    use_case_to_model: dict = {}
+    use_case_graph: dict = {}
+
+    for framework_id, mapping in (inst.get("framework_use_cases", {}) or {}).items():
+        framework_to_use_case[framework_id] = mapping
+        for fit_kind in ("strong_fit", "weak_fit"):
+            for row in mapping.get(fit_kind, []) or []:
+                use_case = row.get("use_case")
+                if not use_case:
+                    continue
+                bucket = use_case_to_framework.setdefault(use_case, {"strong_fit": [], "weak_fit": []})
+                bucket.setdefault(fit_kind, []).append({
+                    "framework": framework_id,
+                    "reason": row.get("reason", "")
+                })
+
+    for row in (inst.get("setup_profile_notes", []) or []):
+        profile = row.get("profile")
+        use_case = row.get("use_case")
+        if not profile or not use_case:
+            continue
+        profile_to_use_case.setdefault(profile, []).append(row)
+        use_case_to_profile.setdefault(use_case, []).append(row)
+
+    for row in (inst.get("model_use_case_notes", []) or []):
+        model = row.get("model")
+        use_case = row.get("use_case")
+        if not model or not use_case:
+            continue
+        model_to_use_case.setdefault(model, []).append(row)
+        use_case_to_model.setdefault(use_case, []).append(row)
+
+    for row in (inst.get("use_case_adjacency", []) or []):
+        src = row.get("from")
+        dst = row.get("to")
+        if not src or not dst:
+            continue
+        use_case_graph.setdefault(src, []).append(row)
+
+    return {
+        "framework_to_use_case": framework_to_use_case,
+        "use_case_to_framework": use_case_to_framework,
+        "profile_to_use_case": profile_to_use_case,
+        "use_case_to_profile": use_case_to_profile,
+        "model_to_use_case": model_to_use_case,
+        "use_case_to_model": use_case_to_model,
+        "use_case_graph": use_case_graph,
+    }
+
+
 def load_all(force_update: bool = False) -> dict[str, dict]:
-    return {name: _load_one(name, force_update) for name in _FILES}
+    data = {name: _load_one(name, force_update) for name in _FILES}
+    data["derived/relation_indexes"] = _build_relation_indexes(data)
+    return data
 
 
 def _load_one(name: str, force_update: bool) -> dict:
@@ -153,6 +214,13 @@ if __name__ == "__main__":
         # Group and print instances
         print("# === INSTANCES ===")
         for key in sorted(k for k in data if k.startswith("instances/")):
+            entity = key.split("/", 1)[1]
+            print(f"\n# --- {entity} ---")
+            print(yaml.dump(data[key], allow_unicode=True, default_flow_style=False))
+
+        # Derived indexes for machine-friendly consumption
+        print("# === DERIVED ===")
+        for key in sorted(k for k in data if k.startswith("derived/")):
             entity = key.split("/", 1)[1]
             print(f"\n# --- {entity} ---")
             print(yaml.dump(data[key], allow_unicode=True, default_flow_style=False))

@@ -54,11 +54,11 @@ _SHARED_ENTITIES = [
     "repo",
     "setup_profile",
     "relation",
+    "cost_estimation",  # schema in concepts/, data (token profiles, thresholds) in instances/
 ]
 
 # Entities that only exist in concepts/
 _CONCEPTS_ONLY = [
-    "cost_estimation",
     "usage_input",
 ]
 

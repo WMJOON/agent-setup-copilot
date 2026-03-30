@@ -104,7 +104,7 @@ _INSTANCE_FILE_TO_SECTION = {
 
 def load_instances_dir(instances_dir: Path) -> dict:
     """Load per-entity YAML files from an instances/ directory into a flat dict."""
-    ontology: dict = {}
+    ontology: dict = {"version": "instances-dir"}  # satisfies schema 'required: [version]'; other required sections (use_cases, devices, models, frameworks) are populated by the loop below
     for filename, section in _INSTANCE_FILE_TO_SECTION.items():
         path = instances_dir / f"{filename}.yaml"
         if path.exists():

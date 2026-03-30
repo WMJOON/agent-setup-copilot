@@ -1,0 +1,28 @@
+# agent-setup-ontology — Cost Estimation Instances (bundle snapshot)
+# Full SOT: https://github.com/WMJOON/agent-setup-ontology
+version: "0.1.0"
+
+token_usage_profiles:
+  general_qa:        { typical_k: 20,   heavy_k: 100  }
+  code_generation:   { typical_k: 80,   heavy_k: 300  }
+  local_copilot:     { typical_k: 50,   heavy_k: 200  }
+  web_automation:    { typical_k: 150,  heavy_k: 500  }
+  document_rag:      { typical_k: 100,  heavy_k: 400  }
+  web_research:      { typical_k: 200,  heavy_k: 600  }
+  code_review:       { typical_k: 120,  heavy_k: 400  }
+  deep_research:     { typical_k: 300,  heavy_k: 800  }
+  agent_monitoring:  { typical_k: 300,  heavy_k: 1000 }
+  multi_agent:       { typical_k: 500,  heavy_k: 2000 }
+  writing_assistant: { typical_k: 30,   heavy_k: 150  }
+  fine_tuning:       { typical_k: 0,    heavy_k: 0    }
+  schedule_task:     { typical_k: 20,   heavy_k: 80   }
+
+break_even_thresholds:
+  strong_case_months: 6
+  worth_considering_months: 18
+
+electricity_monthly_usd:
+  mac_mini_low_power:   { min: 2, max: 5  }
+  high_end_pc_gpu:      { min: 10, max: 20 }
+  mac_studio:           { min: 5, max: 10 }
+  macbook_idle:         { min: 1, max: 3  }

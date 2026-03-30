@@ -22,7 +22,8 @@
           "needs_always_on":        { "type": "boolean" },
           "requires_gpu":           { "type": "boolean" },
           "recommended_models":     { "type": "array", "items": { "type": "string" } },
-          "recommended_frameworks": { "type": "array", "items": { "type": "string" } }
+          "recommended_frameworks": { "type": "array", "items": { "type": "string" } },
+          "note":                   { "type": "string" }
         },
         "additionalProperties": false
       }

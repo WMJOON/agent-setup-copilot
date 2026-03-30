@@ -1,40 +1,45 @@
 # agent-setup-ontology — Cost Estimation concept definitions (bundle snapshot)
+# Semantic layer: field definitions and formulas only.
+# Actual data (token usage profiles, break-even thresholds) → instances/cost_estimation.yaml
 # Full SOT: https://github.com/WMJOON/agent-setup-ontology
 
 version: "0.1.0"
 
 cost_estimation:
+
   what: >
-    Framework for estimating monthly LLM API costs and performing break-even
-    analysis against local hardware investment. Helps users decide when
-    transitioning to local inference becomes cost-effective.
+    Framework for estimating monthly LLM API costs and determining
+    when a local hardware investment becomes cost-effective.
 
   token_usage_profiles:
-    general_qa:
-      typical_k: 20
-      heavy_k: 100
-      description: General question-answering and chat usage.
-    code_generation:
-      typical_k: 80
-      heavy_k: 300
-      description: Code writing, review, and refactoring tasks.
-    web_automation:
-      typical_k: 150
-      heavy_k: 500
-      description: Browser automation, scraping, and web-agent workflows.
-    multi_agent:
-      typical_k: 500
-      heavy_k: 2000
-      description: Multi-agent orchestration with inter-agent communication.
+    what: >
+      Approximate daily token consumption by use case.
+      Actual usage varies significantly by workflow design and model verbosity.
+      Agent tasks are typically input-heavy due to tool call context and history.
+    fields:
+      typical_k: >
+        Daily token consumption (thousands) for typical/moderate usage.
+        Use when the user reports average or general-purpose workloads.
+      heavy_k: >
+        Daily token consumption (thousands) for heavy/power-user usage.
+        Use when the user reports running agents continuously or processing large volumes.
+    note: >
+      Actual per-use-case values are in instances/cost_estimation.yaml.
 
-  monthly_cost_formula:
-    description: >
-      monthly_cost = (tokens_per_day / 1_000_000) * price_per_million * 30.
-      Token counts use the "k" unit (thousands of tokens per day).
+  monthly_cost_formula: >
+    monthly_tokens = tokens_per_day × 30
+    input_tokens   = monthly_tokens × 0.60
+    output_tokens  = monthly_tokens × 0.40
+    monthly_cost   = (input_tokens / 1_000_000 × input_price)
+                   + (output_tokens / 1_000_000 × output_price)
+    Note: 0.60/0.40 split is the default agent workload ratio.
 
-  break_even_rule:
-    description: >
-      break_even_months = hardware_cost / monthly_api_savings.
-      If break_even_months <= 12, local transition is strongly recommended.
-      If 12 < break_even_months <= 24, transition is worthwhile for heavy users.
-      If break_even_months > 24, staying on API may be more practical.
+  device_monthly_cost: >
+    Amortized device cost formula (2-year lifespan assumption):
+      device_monthly = device_price / 24
+    Electricity cost estimates are in instances/cost_estimation.yaml.
+
+  break_even_formula: >
+    payback_months = device_price / (monthly_api_cost - device_monthly_cost)
+    When monthly_api_cost <= device_monthly_cost: local is never cheaper on cost alone.
+    Interpretation thresholds are in instances/cost_estimation.yaml.

@@ -40,10 +40,11 @@ skills/agent-setup-copilot/script/
 ```
 
 1. **상태는 5개 고정** — DETECT / INTAKE / GATE / PROPOSE / DONE. 추가 금지.
-2. **슬롯은 4개** — goal / constraint / tech_level / success.
+2. **슬롯은 5개** — goal / constraint / tech_level / success / deployment_target.
 3. **한 턴에 질문 1개** — 사용자 부담 최소화.
 4. **스크립트는 PROPOSE에서만 호출** — 진단 전 실행 금지.
 5. **상태는 Claude가 머릿속에 유지** — 외부 파일 저장 없음.
+6. **교정과 질문은 다른 턴** — adversarial 처리(교정/Reframing)를 한 턴에 했으면, 슬롯 확인 질문은 반드시 다음 턴으로 분리한다.
 
 ---
 
@@ -68,15 +69,33 @@ skills/agent-setup-copilot/script/
 
 ### INTAKE
 
-> 최대 4턴
+> 최대 5턴 (base 4턴 + deployment_target 확인 1턴)
 
-채워야 할 슬롯 4개:
+채워야 할 슬롯 5개:
 
 ```
-goal        — 왜 로컬 AI를 원하는가 (비용/성능/프라이버시/탐색)
-constraint  — 예산 or 보유 장비 or 시간 제약
-tech_level  — 개발자 여부, AI 경험 수준
-success     — 이 상담이 끝났을 때 무엇을 알고 싶은가
+goal              — 왜 로컬 AI를 원하는가 (비용/성능/프라이버시/탐색)
+constraint        — 예산 or 보유 장비 or 시간 제약
+tech_level        — 개발자 여부, AI 경험 수준
+success           — 이 상담이 끝났을 때 무엇을 알고 싶은가
+deployment_target — 실행 환경 (local / aws / runpod / azure / 미정)
+```
+
+> `deployment_target`은 cloud 키워드가 등장하거나 PROPOSE 진입 전에 미결 상태면 질문 1회 추가.
+> "로컬"만 언급한 경우 기본값 `local`로 설정하고 별도 질문 생략.
+
+**INTAKE 거부 fallback:**
+
+사용자가 슬롯 수집 질문을 거부하거나 답변을 생략할 경우:
+
+```
+1. 필수 슬롯은 constraint(장비/OS) 1개만 재시도
+2. 나머지 미수집 슬롯은 기본값으로 대입:
+   - goal = exploration (탐색)
+   - tech_level = 발화 어투·용어 기반 추정
+   - success = "오늘 바로 시작할 수 있는 방법"
+   - deployment_target = local
+3. 2턴 내 goal+constraint 미확보 시 즉시 GATE 강제 진입 (4턴 대기 불필요)
 ```
 
 **유형별 질문 세트:**
@@ -103,10 +122,14 @@ Q4 (Need-Payoff): "해결되면 어떤 게 가장 달라질까요?"
 
 ```
 Q1: "[사용자 언급 목표] — 맞나요? 최종 목표가 뭔지 한 문장으로 말씀해주시면요."
+Q1.5 (5 Whys 필수): "그게 필요한 이유가 뭔가요? 어떤 문제를 해결하려고 하시는 건지요."
+     → 사용자가 기술 스펙을 직접 발화해도 이 질문을 1회 반드시 수행한다.
+     → 답변에서 actual_need가 확인되면 Q2로 진행.
 Q2: "지금 막히는 부분이 구체적으로 뭔가요? (하드웨어 / 모델 선택 / 프레임워크 / 비용)"
 ```
 
-Builder는 2턴으로 GATE 진입 허용.
+Builder는 Q1.5 포함 최대 3턴으로 GATE 진입 허용.
+Q1.5에서 actual_need가 명확해지면 Q2 생략 후 즉시 GATE 가능.
 
 #### Decider (2x2 직행 — 비교 기준만 확인)
 
@@ -134,7 +157,7 @@ goal 미확보                  → INTAKE 루프백 (최대 1회)
 PROPOSE 진입 전 슬롯 요약을 출력하고 확인받는다:
 
 ```
-"정리해보면 — [goal 요약], [constraint 요약], [tech_level], [success 기준]. 맞나요?"
+"정리해보면 — [goal 요약], [constraint 요약], [tech_level], [success 기준], 실행 환경: [deployment_target]. 맞나요?"
 ```
 
 ---
@@ -156,6 +179,19 @@ PROPOSE 진입 전 슬롯 요약을 출력하고 확인받는다:
    - **negative constraint가 있으면 반드시 이 스크립트를 호출해야 한다**
 3. 성능 확인 필요 시: `python3 skills/agent-setup-copilot/script/estimator.py`
 4. 전환 시점 필요 시 (Optimizer): `python3 skills/agent-setup-copilot/script/transition.py`
+
+**usage_input 슬롯 추론 규칙 (PROPOSE 진입 전 적용):**
+
+```
+monthly_cost_usd 수집됨    → 직접 사용. token 추정 불필요.
+tokens_per_day 수집됨      → monthly_cost_formula 적용 (concepts/cost_estimation.yaml).
+use_cases + usage_intensity → token_usage_profiles[use_case][typical_k or heavy_k] 합산
+                              (instances/cost_estimation.yaml).
+아무것도 없을 때 질문 순서:
+  1. "지금 어떤 API 쓰고 계세요?"
+  2. "한 달 요금이 대략 얼마나 나오나요?"
+  3. "주로 어떤 용도로 쓰세요?"
+```
 
 **유형별 출력 형식:**
 
@@ -214,6 +250,114 @@ Explorer 형식 + transition.py 결과 비용 비교표 포함.
 1. "[현재 맥락에서 자연스러운 질문]"
 2. "[현재 맥락에서 자연스러운 질문]"
 3. "[현재 맥락에서 자연스러운 질문]"
+```
+
+---
+
+## Adversarial 처리 규칙
+
+사용자가 오개념을 고집하거나 교정에 저항할 때:
+
+### 1턴 분리 원칙 (P1)
+
+```
+교정 턴:  오개념 재구성(Reframing) 또는 직접 교정만 수행
+          → 이 턴에서 슬롯 확인 질문 금지
+
+다음 턴:  슬롯 확인 질문 1개만 수행
+          → 교정 반복 금지
+```
+
+**위반 패턴 예시 (금지):**
+> "사실 SageMaker는 A가 아니라 B입니다. 그런데 현재 장비가 어떻게 되세요?"
+→ 교정 + 질문을 같은 턴에 넣음 — **E2 위반**
+
+**올바른 패턴:**
+> 교정 턴: "SageMaker는 A가 아니라 B입니다. 실제로 필요하신 건 C 방향인 것 같아요."
+> 다음 턴: "현재 장비가 어떻게 되세요?"
+
+### Reframing 우선
+
+adversarial 상황에서는 단순 반복 주장 대신 문제를 재구성한다:
+
+```
+사용자 프레임:  "이 방법이 맞아요, 그냥 해주세요"
+Reframing:     "목표([실제 목표])를 기준으로 보면,
+               그 방법은 [구체적 문제]가 생길 수 있어요.
+               대신 [대안]으로 같은 목표를 더 안전하게 달성할 수 있어요."
+```
+
+---
+
+## Cloud Deployment 섹션
+
+`deployment_target`이 `aws` / `runpod` / `azure` 일 때 PROPOSE에서 플랫폼별 경로를 적용한다.
+
+### deployment_target 감지 기준
+
+| 키워드 | deployment_target |
+|--------|------------------|
+| EC2, S3, SageMaker, AWS | aws |
+| RunPod, Pod, GPU 렌탈 | runpod |
+| Azure, OpenAI Service, 망분리 | azure |
+| "클라우드", "서버 빌려서" | 질문 1회: "어떤 클라우드 플랫폼 생각하세요?" |
+| 없음 / "내 컴퓨터" | local |
+
+### AWS (Builder 주요 유형)
+
+```
+추천 경로:
+  1. EC2 (g4dn / g5) + Ollama + Docker
+     - AMI: Deep Learning Base (Ubuntu 22.04)
+     - 아키텍처 주의: g4dn=x86_64, Graviton(m7g 등)=ARM — Ollama 바이너리 다름
+     - Security Group: 포트 11434(Ollama) 인바운드 제한 (0.0.0.0 금지)
+     - 비용 최적화: Spot Instance 활용 (On-Demand 대비 최대 70% 절감)
+  2. SageMaker 오해 교정 필수:
+     - SageMaker ≠ Ollama 호스팅 — 훈련/추론 파이프라인 전용
+     - Ollama 직접 실행은 EC2가 적합
+  3. estimator.py 미지원 인스턴스: g4dn.xlarge(16GB VRAM), g5.xlarge(24GB VRAM)
+     → 직접 명시: "g4dn.xlarge에서 7B 모델 약 X t/s 예상"
+```
+
+### RunPod (Optimizer 주요 유형)
+
+```
+추천 경로:
+  1. Secure Cloud vs Community Cloud 선택 기준:
+     - Secure Cloud: 전용 하드웨어, 데이터 격리 보장 — 민감 데이터/기업용
+     - Community Cloud: 공유 환경, 저렴 — 실험/개인 프로젝트
+  2. Network Volume: 체크포인트 저장 필수 (Pod 종료 시 로컬 스토리지 삭제됨)
+  3. QLoRA fine-tuning: A100 40GB 이상 권장 (70B 기준 최소 80GB)
+  4. deo_resolver.py: 데이터 보안 제약 있으면 Secure Cloud만 포함
+```
+
+### Azure (Decider 주요 유형)
+
+```
+추천 경로 (2x2 매트릭스: 보안준수 × 구현복잡도):
+
+  High보안 / High복잡: Azure OpenAI + Private Endpoint + APIM + Azure AI Search
+  High보안 / Low복잡:  Azure OpenAI + Managed VNet + Customer-Managed Keys
+  Low보안  / Low복잡:  Azure OpenAI 표준 (공공/교육용)
+  Low보안  / High복잡: 해당 없음 (권장 안 함)
+
+교정 필수:
+  Azure OpenAI ≠ OpenAI API — 격리된 인스턴스, 프롬프트가 모델 학습에 미사용
+  (Microsoft Data, Privacy, Security commitments)
+
+금융/공공 규정 키워드 감지 시:
+  - Korea Central 리전 강제 (Azure Policy)
+  - Private Endpoint 구성 (인터넷 노출 차단)
+  - Microsoft Purview 감사 로그 (데이터 보관 의무)
+  - Customer-Managed Keys (CMK) 암호화
+```
+
+### 클라우드 공통 deo_resolver.py 호출
+
+```bash
+# 망분리/데이터 격리 제약
+python3 skills/agent-setup-copilot/script/deo_resolver.py \
+  --json '{"positive":["cloud_deployment","rag"],"negative":["internet_exposure"],"constraints":{"hard":["data_isolation"],"soft":["korea_region"]}}'
 ```
 
 ---

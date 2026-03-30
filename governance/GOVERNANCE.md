@@ -28,8 +28,8 @@ agent-setup-ontology/         ← data provider
 │   ├── component.yaml
 │   ├── repo.yaml
 │   ├── setup_profile.yaml
-│   ├── cost_estimation.yaml
-│   ├── usage_input.yaml
+│   ├── cost_estimation.yaml  ← schema/formulas only; data values in instances/cost_estimation.yaml
+│   ├── usage_input.yaml      ← user input schema; inference_rules live in SKILL.md
 │   └── relation.yaml
 ├── instances/                ← instance data conforming to this contract
 │   ├── use_case.yaml
@@ -40,6 +40,7 @@ agent-setup-ontology/         ← data provider
 │   ├── component.yaml
 │   ├── repo.yaml
 │   ├── setup_profile.yaml
+│   ├── cost_estimation.yaml  ← token usage profiles, thresholds (paired with concepts/)
 │   └── relation.yaml
 └── skills/ontology-harness/SKILL.md
 ```

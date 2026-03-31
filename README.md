@@ -22,6 +22,7 @@ Recommends the right local AI agent stack based on your goal, budget, and curren
 - **Cost analysis** — estimated API spend vs local hardware break-even
 - **Transition timing** — when to switch from cloud API to local setup based on usage growth
 - **Performance estimates** — tokens/sec for any device x model combination
+- **Simple capability summaries** — "What can this machine realistically do?" in plain language
 
 Powered by Claude Code. No Ollama or API key needed to run the advisor itself.
 
@@ -42,6 +43,8 @@ That's it. Ask Claude Code directly:
 "How fast is qwen3.5:35b-a3b on my device?"
 "How do I set up OpenClaw?"
 "Compare AutoGen vs CrewAI for multi-agent pipelines"
+"Mac mini M4 32GB인데 쉽게 설명해줘"
+"What can my machine realistically handle?"
 ```
 
 ---
@@ -54,13 +57,44 @@ That's it. Ask Claude Code directly:
 | `skills/agent-setup-copilot/script/estimator.py` | Estimate tokens/second for device x model |
 | `skills/agent-setup-copilot/script/transition.py` | Calculate optimal API -> local transition month |
 | `skills/agent-setup-copilot/script/deo_resolver.py` | DEO constraint-aware setup path resolver |
+| `skills/agent-setup-copilot/script/sync_ontology_bundle.py` | Sync ontology SoT into copilot bundle + cache, optionally smoke-test |
 
 ```bash
 # Examples (run directly or via Claude Code)
 python3 skills/agent-setup-copilot/script/loader.py --update
 python3 skills/agent-setup-copilot/script/estimator.py --device mac_mini_m4_32gb --compare-models
+python3 skills/agent-setup-copilot/script/estimator.py --device mac_mini_m4_32gb --summary-style simple
 python3 skills/agent-setup-copilot/script/transition.py --api claude-haiku-4-5 --monthly-cost 15 --growth 10
 python3 skills/agent-setup-copilot/script/deo_resolver.py --query "fast agent without docker" --goal web_automation
+python3 skills/agent-setup-copilot/script/sync_ontology_bundle.py --smoke-test
+```
+
+### Example: plain-language device summary
+
+```bash
+python3 skills/agent-setup-copilot/script/estimator.py \
+  --device mac_mini_m4_32gb \
+  --summary-style simple
+```
+
+Example output shape:
+
+```text
+=== 쉬운 요약 — Mac Mini M4 32GB ===
+
+한 줄 결론
+- 개인용 로컬 AI/자동화 서버로 충분히 실용적입니다.
+
+잘하는 것
+- 웹 자동화
+- 코드 생성·보조
+- 일반 Q&A 챗봇
+
+애매한 것
+- 딥리서치 (느리지만 가능)
+
+비추천
+- 파인튜닝 (장비 정책상 비권장)
 ```
 
 ---

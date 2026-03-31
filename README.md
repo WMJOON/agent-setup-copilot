@@ -58,6 +58,7 @@ That's it. Ask Claude Code directly:
 | `skills/agent-setup-copilot/script/transition.py` | Calculate optimal API -> local transition month |
 | `skills/agent-setup-copilot/script/deo_resolver.py` | DEO constraint-aware setup path resolver |
 | `skills/agent-setup-copilot/script/sync_ontology_bundle.py` | Sync ontology SoT into copilot bundle + cache, optionally smoke-test |
+| `skills/agent-setup-copilot/script/surface_advisor.py` | Rank CLI / IDE / API surfaces by OpenClaw fit, auth mode, and headless suitability |
 
 ```bash
 # Examples (run directly or via Claude Code)
@@ -67,6 +68,7 @@ python3 skills/agent-setup-copilot/script/estimator.py --device mac_mini_m4_32gb
 python3 skills/agent-setup-copilot/script/transition.py --api claude-haiku-4-5 --monthly-cost 15 --growth 10
 python3 skills/agent-setup-copilot/script/deo_resolver.py --query "fast agent without docker" --goal web_automation
 python3 skills/agent-setup-copilot/script/sync_ontology_bundle.py --smoke-test
+python3 skills/agent-setup-copilot/script/surface_advisor.py --prefer-openclaw --require-headless --auth-mode api_key
 ```
 
 ### Example: plain-language device summary

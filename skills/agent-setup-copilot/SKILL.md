@@ -25,7 +25,8 @@ skills/agent-setup-copilot/script/
 ├── estimator.py     # 성능 추산: t/s 계산, 메모리 적합 여부, use-case 적합도
 ├── transition.py    # API → 로컬 전환 시점 분석: 비용 성장, 손익분기, 최적 전환 월
 ├── deo_resolver.py  # DEO 기반 제약 조건 추론 엔진: positive/negative/constraint 분리 → 최적 경로 선택
-└── sync_ontology_bundle.py # ontology SoT → copilot bundle/cache 동기화 + smoke test
+├── sync_ontology_bundle.py # ontology SoT → copilot bundle/cache 동기화 + smoke test
+└── surface_advisor.py # CLI / IDE / API surface를 OpenClaw 적합도, auth mode, headless 적합도로 정렬
 ```
 
 ---

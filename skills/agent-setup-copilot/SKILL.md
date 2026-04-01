@@ -203,6 +203,27 @@ PROPOSE 진입 전 슬롯 요약을 출력하고 확인받는다:
 
 온톨로지 로드 후 옵션 3개를 제시한다.
 
+**추론 레이어 규칙 (Fact → Semantic → Decision):**
+
+온톨로지는 3개 레이어로 분리되어 있다. Copilot는 반드시 이 순서로 추론한다.
+
+```
+1. 사용자 goal / constraint 파악 (INTAKE 슬롯)
+2. Fact layer에서 후보 수집    — 측정/검증 가능한 객관 속성만
+3. Semantic layer에서 후보 해석 — Fact를 재사용 가능한 의미 단위로 번역
+4. Decision layer에서 판단     — Semantic을 사용자 맥락에 적용해 우선순위/배제/trade-off 결정
+5. 자연어 추천 생성
+```
+
+> **핵심 규칙**: Copilot는 Fact만으로 추천하지 않는다.
+> Semantic 해석을 거친 뒤 Decision rule을 적용한다.
+
+| 레이어 | 포함 | 금지 |
+|--------|------|------|
+| `fact` | 측정값, spec, rubric 기반 class | 추천 문장, 페르소나 fit |
+| `semantic` | 재사용 가능한 해석 개념 (예: `quiet_always_on_friendly`) | 추천 문장, 사용자 목표/예산 직접 판단 |
+| `decision` | `applies_when` 기반 prefer/avoid/trade-off | Semantic 없는 결론, 근거 없는 추천 |
+
 **스크립트 호출 순서:**
 
 1. 항상: `python3 skills/agent-setup-copilot/script/loader.py`

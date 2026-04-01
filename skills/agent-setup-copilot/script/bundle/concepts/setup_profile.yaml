@@ -1,28 +1,34 @@
-# agent-setup-ontology — Setup Profile concept definitions (bundle snapshot)
-# Full SOT: https://github.com/WMJOON/agent-setup-ontology
-
+# agent-setup-ontology — Setup Profile concept definitions
+# Semantic layer: what setup_profile fields mean.
 version: "0.1.0"
 
 setup_profile:
+
   what: >
-    Curated device + model + framework combinations that form a complete,
-    tested local AI agent setup. Profiles are matched to user roles and
-    budgets to provide turnkey recommendations.
+    A curated, validated combination of devices + model + framework
+    for a specific use case goal. Profiles are higher-level than
+    individual device or model recommendations — they describe
+    complete, working systems with concrete setup steps.
+    The copilot uses profiles when users describe a specific
+    hardware combination or ask "how would I set this up end-to-end?"
 
   fields:
-    roles:
-      description: >
-        Target user roles or personas this profile serves
-        (e.g., developer, researcher, home-automation enthusiast).
-    complexity:
-      description: >
-        Overall setup complexity (low, medium, high). Accounts for OS config,
-        model downloads, framework installation, and integration work.
-    monthly_cost:
-      description: >
-        Estimated ongoing monthly cost (electricity, optional cloud fallback).
-        Excludes one-time hardware purchase.
-    setup_steps:
-      description: >
-        Ordered list of high-level steps to go from unboxing to a working
-        local agent stack.
+
+    roles: >
+      In multi-device setups, each device has a specific role.
+      One device may be the always-on control plane (handles routing,
+      light inference, scheduling) while another is the inference server
+      (handles heavy models, batch jobs).
+      This mirrors a microservices architecture applied to local AI.
+
+    complexity: >
+      Same scale as frameworks.complexity (low / medium / high).
+      Applies to the full setup, not just one component.
+
+    monthly_cost: >
+      Estimated monthly operating cost (electricity only for local setups).
+      Helps users compare long-term running costs beyond the upfront hardware.
+
+    setup_steps: >
+      Ordered list of exact commands to go from zero to running.
+      Referenced by the copilot when explaining setup to users.

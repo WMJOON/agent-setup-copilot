@@ -1,25 +1,137 @@
-# agent-setup-ontology — Model concept definitions (bundle snapshot)
-# Full SOT: https://github.com/WMJOON/agent-setup-ontology
-
+# agent-setup-ontology — Model Concept Definitions
+# Semantic definitions for model fields, quality tiers, and architecture types.
 version: "0.1.0"
 
 model:
+
   what: >
-    Local LLM models run via Ollama. Each model is characterised by its
-    architecture, quality tier, and suitability for specific tasks.
+    An Ollama-pullable LLM. The id is the exact ollama pull tag.
+    Models are compared by parameter count, architecture, and quality tier —
+    not by provider or license alone.
 
   fields:
-    type:
-      description: >
-        Architecture type — dense (standard transformer), MoE (mixture-of-experts),
-        or reasoning (chain-of-thought optimised).
+
     quality:
-      description: >
-        Quality tier indicating overall capability (e.g., good, great, excellent).
-        Higher tiers require more resources.
-    tool_calling:
-      description: Whether the model supports structured tool/function calling.
-    sweet_spot:
-      description: >
-        The device tier where this model runs best — balances speed, quality,
-        and resource usage for practical daily use.
+      what: >
+        Output capability bracket, calibrated to agent use cases
+        (tool calling, reasoning, instruction following).
+        Corresponds loosely to parameter scale but accounts for architecture.
+      values:
+        light: >
+          ~1-4B parameters. Fits in 2-4 GB.
+          Fast on any device. Limited multi-step reasoning.
+          Best for: autocomplete, simple Q&A, lightweight tool calls.
+        standard: >
+          ~7-9B parameters. The personal-use sweet spot.
+          Strong instruction following and tool calling.
+          Best for: web search agents, code generation, document Q&A,
+          most single-agent workflows.
+        standard-plus: >
+          ~14B parameters. Noticeably better than standard at
+          multi-step reasoning, code review, and nuanced instructions.
+          Fits comfortably in 16 GB with room for context.
+        pro: >
+          27B+ dense or MoE-equivalent.
+          Required for: LLM-as-Judge evaluation, complex multi-agent reasoning,
+          high-quality code review, agent monitoring.
+          Also the minimum quality for reliable RAG over large corpora.
+
+    type:
+      what: Neural network architecture type. Affects memory usage pattern.
+      values:
+        dense: >
+          All parameters active on every token.
+          Simpler to reason about. Memory usage scales directly with param count.
+          Inference speed bottlenecked by memory bandwidth.
+        MoE: >
+          Mixture-of-Experts. Only a fraction of parameters activate per token
+          (e.g. qwen3.5:35b-a3b activates 3B of 35B).
+          Achieves large-model quality with smaller active compute.
+          Requires full model to fit in memory, but runs at smaller-model speed.
+          Best choice when memory is ≥32 GB but bandwidth is limited (base chips).
+        reasoning: >
+          Chain-of-thought reasoning model (e.g. DeepSeek-R1 family).
+          Generates extended internal reasoning tokens (<think>...</think>) before
+          the final answer, consuming more tokens and adding latency.
+          Significantly stronger at multi-step math, logic, code analysis, and
+          complex problem solving vs same-size dense models.
+          Trade-off: slower time-to-first-token, higher per-query token cost.
+          Not suitable for real-time tool-calling agent loops — best for batch
+          evaluation, LLM-as-Judge tasks, and offline reasoning workloads.
+          tool_calling is typically false for current reasoning distillations.
+
+    tool_calling: >
+      Whether the model reliably executes structured tool/function calls.
+      Required for agent use. Models without tool_calling=true should not be
+      recommended for frameworks that depend on function calling
+      (smolagents, qwen-agent, crewai, openclaw).
+
+    sweet_spot: >
+      Marks the model as the best quality-to-resource ratio in its tier.
+      The copilot prioritizes sweet_spot models when making recommendations
+      unless the user has specific quality or speed requirements.
+
+  taxonomy_extension:
+
+    note: >
+      The current governance schema does not yet require richer taxonomy fields,
+      but model coverage is expanding beyond general chat LLMs.
+      Therefore the ontology should conceptually track a second-layer taxonomy
+      even before it becomes a formal required field set.
+
+    primary_capability_class:
+      what: >
+        High-level functional role of the model.
+        Unlike quality/type, this answers: "What is this model mainly for?"
+      values:
+        general: >
+          General-purpose local LLM for chat, assistant, summarization,
+          and everyday tool-using agents.
+        coding: >
+          Model optimized for code generation, refactoring, review,
+          and IDE/copilot use cases.
+        reasoning: >
+          Model specialized for multi-step reasoning, evaluation,
+          judge tasks, and analysis-heavy workloads.
+        embedding: >
+          Vectorization model used for retrieval, search, clustering,
+          and semantic matching. Not a text generation default.
+        multimodal: >
+          Model that accepts text plus image/vision input.
+          Useful for browser/UI analysis and visual reasoning.
+        speech: >
+          Audio/speech-oriented model stack (e.g. transcription, speech understanding).
+          Often adjacent to LLM workflows rather than a direct chat model.
+
+    interaction_profile:
+      what: >
+        Operational interaction style in an agent system.
+      values:
+        tool_agentic: >
+          Suitable for real-time tool-calling loops and agent frameworks.
+        chat_only: >
+          Best for interactive chat, writing, and text-in/text-out flows.
+        batch_reasoner: >
+          Best for offline reasoning, judging, review, and analytical batch jobs.
+        retrieval_backend: >
+          Used as a retrieval/vector backend rather than a direct generator.
+        vision_agentic: >
+          Suitable for multimodal UI/browser/visual-agent workloads.
+        speech_pipeline: >
+          Used in audio transcription or voice processing pipelines.
+
+    modality_flags:
+      what: >
+        A future optional flag layer for input/output capability.
+      candidate_fields:
+        - text_in
+        - text_out
+        - vision_in
+        - audio_in
+        - embedding_out
+
+    migration_strategy: >
+      Recommended adoption path:
+      (1) define taxonomy conceptually here,
+      (2) add instance metadata as optional fields later,
+      (3) promote to governance only after copilot actually uses them.

@@ -1,24 +1,27 @@
-# agent-setup-ontology — Repo concept definitions (bundle snapshot)
-# Full SOT: https://github.com/WMJOON/agent-setup-ontology
-
+# agent-setup-ontology — Repo concept definitions
+# Semantic layer: what repo fields mean.
 version: "0.1.0"
 
 repo:
+
   what: >
-    Key open-source GitHub repositories for building local AI agent setups.
-    Each repo entry links a project to its framework, minimum model requirements,
-    and quick-start instructions.
+    A key open-source GitHub repository for building local AI agent setups.
+    Augments the frameworks[] entity with install commands, quickstart code,
+    community links, and real-world setup complexity notes.
+    The copilot references repos when a user asks "how do I set this up?"
+    or "what's the GitHub for X?"
 
   fields:
-    framework_ref:
-      description: Reference to the framework entity this repository implements or extends.
-    min_model_quality:
-      description: >
-        Minimum model quality tier needed for the repo's tooling to work
-        effectively (e.g., good, great).
-    install:
-      description: Brief installation instructions or command (e.g., pip install, docker compose).
-    quickstart:
-      description: >
-        Condensed getting-started steps so users can have the tool running
-        with a local model in minutes.
+
+    min_model_quality: >
+      The minimum model quality tier for this repo to work reliably.
+      openclaw requires standard+ (32B recommended for complex tasks).
+      open-webui works with light models for basic Q&A.
+
+    install: >
+      Exact shell commands to install and start the tool locally.
+      Kept minimal — just what's needed to go from zero to running.
+
+    quickstart: >
+      Minimal working code snippet for agent frameworks.
+      Should fit in a single code block, under 10 lines.

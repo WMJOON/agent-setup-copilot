@@ -1,22 +1,86 @@
-# agent-setup-ontology — Device concept definitions (bundle snapshot)
-# Full SOT: https://github.com/WMJOON/agent-setup-ontology
-
+# agent-setup-ontology — Device Concept Definitions
+# Semantic definitions for device fields, tiers, and types.
 version: "0.1.0"
 
 device:
+
   what: >
-    Hardware devices suitable for local LLM inference. Ranges from
-    single-board computers to multi-GPU workstations, each classified
-    by capability tier and form factor.
+    A physical machine capable of running a local LLM via Ollama.
+    Devices are categorized by memory, chip, and portability —
+    not by brand or generation.
 
   fields:
+
     tier:
-      description: >
-        Capability tier — light (edge/SBC), standard (consumer desktop/laptop),
-        standard-plus (high-end consumer with discrete GPU), pro (workstation/multi-GPU).
-    portability:
-      description: Whether the device is portable (laptop, mini-PC) or stationary (desktop, server).
-    always_on:
-      description: Whether the device is designed for continuous 24/7 operation.
-    max_model:
-      description: Largest model (by parameter count / quantisation) the device can run effectively.
+      what: >
+        Practical capability bracket derived from memory size and bandwidth.
+        Used by the copilot to quickly filter viable stacks without
+        checking every individual spec.
+      values:
+        light: >
+          8 GB or less unified/system memory.
+          Limited to sub-7B models (4B class recommended).
+          Suitable for single, lightweight tasks: autocomplete, simple Q&A.
+          Not practical for multi-step agents or RAG over large documents.
+        standard: >
+          16 GB memory.
+          Runs 9B models comfortably at practical speeds (15-35 t/s on Apple Silicon).
+          Covers most single-agent use cases: web search, code generation,
+          document RAG on moderate-length texts.
+          The minimum recommended tier for a daily-driver local agent.
+        standard-plus: >
+          32 GB memory with a base chip (e.g. Apple M4, not Pro).
+          Runs MoE models like qwen3.5:35b-a3b (activates only 3B per token),
+          achieving 27B-class output quality at 18-25 t/s.
+          Full single-agent coverage. Limited multi-agent due to lower bandwidth.
+          Best price-to-capability sweet spot in 2026.
+        pro: >
+          32 GB+ with high-bandwidth chip (M3/M4 Pro/Max, ≥273 GB/s),
+          or 24 GB+ dedicated GPU VRAM.
+          Runs 27B+ dense models or 72B MoE models.
+          Suitable for: multi-agent pipelines, LLM-as-Judge evaluation,
+          LoRA fine-tuning, and team-shared AI servers.
+        pro-plus: >
+          48 GB+ with M5 Pro/Max (≥307 GB/s) or Blackwell workstation CPUs.
+          Utilizes integrated GPU Neural Accelerators (3.6x TTFT).
+          Ultimate local performance. Instant responses on 35B models.
+          Optimized for large-scale multi-agent simulation and deep research.
+
+    type:
+      what: Device form factor and platform.
+      values:
+        macbook: Portable Apple Silicon laptop. Fan-throttling risk on long inference.
+        mac-mini: Stationary, fanless or quiet. Ideal always-on local AI server.
+        mac-studio: High-performance stationary Apple Silicon. Highest bandwidth per dollar.
+        pc: Windows or Linux desktop/laptop with discrete GPU. Best for fine-tuning (CUDA).
+        ai-supercomputer: >
+          Purpose-built AI inference appliance with unified high-bandwidth memory
+          (e.g. NVIDIA DGX Spark). Not a general-purpose PC. Designed for running
+          100B+ parameter models locally. Runs Ollama-compatible runtimes.
+        other: Any other device (e.g. custom server, Raspberry Pi, mobile).
+
+    max_model: >
+      The most capable Ollama model that runs at practically usable speeds
+      (≥10 t/s for interactive use, ≥5 t/s for batch) on this device,
+      using Q4_K_M quantization. Must reference a valid models[*].id.
+
+    memory_bandwidth_gbs: >
+      Peak memory bandwidth in GB/s. Critical for large model inference speed —
+      higher bandwidth means faster token generation for the same model.
+      Apple M4 base: 120 GB/s, M4 Pro: 273 GB/s, M5 Pro: 307 GB/s, RTX 4090: ~1000 GB/s.
+
+    ai_accelerator_type:
+      what: >
+        The underlying HW architecture for AI acceleration.
+        Affects TTFT (Time To First Token) more than streaming speed.
+      values:
+        dedicated_npu: Separate Neural Engine (e.g. M1-M4, NPU 40 TOPS).
+        integrated_gpu_accelerator: >
+          Accelerators integrated into EVERY GPU core (e.g. M5). 
+          Achieves significantly lower latency (up to 3.6x) for initial response.
+
+    ttft_multiplier:
+      what: >
+        Inference efficiency multiplier compared to a baseline M4 chip.
+        Values > 1.0 indicate faster initial model response (prefill speed).
+        M4: 1.0, M5: 3.6.

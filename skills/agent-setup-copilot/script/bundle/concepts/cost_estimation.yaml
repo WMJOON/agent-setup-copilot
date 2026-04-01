@@ -1,8 +1,6 @@
-# agent-setup-ontology — Cost Estimation concept definitions (bundle snapshot)
-# Semantic layer: field definitions and formulas only.
-# Actual data (token usage profiles, break-even thresholds) → instances/cost_estimation.yaml
-# Full SOT: https://github.com/WMJOON/agent-setup-ontology
-
+# agent-setup-ontology — Cost Estimation concept definitions
+# Semantic layer: field definitions and formulas for API vs local cost analysis.
+# Actual token usage data and break-even thresholds → instances/cost_estimation.yaml
 version: "0.1.0"
 
 cost_estimation:
@@ -18,13 +16,14 @@ cost_estimation:
       Agent tasks are typically input-heavy due to tool call context and history.
     fields:
       typical_k: >
-        Daily token consumption (thousands) for typical/moderate usage.
+        Daily token consumption (thousands) for typical/moderate usage of this use case.
         Use when the user reports average or general-purpose workloads.
       heavy_k: >
         Daily token consumption (thousands) for heavy/power-user usage.
         Use when the user reports running agents continuously or processing large volumes.
     note: >
       Actual per-use-case values are in instances/cost_estimation.yaml.
+      Update there when usage patterns shift — do not hardcode here.
 
   monthly_cost_formula: >
     monthly_tokens = tokens_per_day × 30
@@ -33,13 +32,18 @@ cost_estimation:
     monthly_cost   = (input_tokens / 1_000_000 × input_price)
                    + (output_tokens / 1_000_000 × output_price)
     Note: 0.60/0.40 split is the default agent workload ratio.
+    Adjust if the user's workload is known to be output-heavy (e.g. long-form writing → 0.40/0.60).
 
   device_monthly_cost: >
     Amortized device cost formula (2-year lifespan assumption):
       device_monthly = device_price / 24
-    Electricity cost estimates are in instances/cost_estimation.yaml.
+    Add electricity:
+      Mac Mini / stationary low-power → +$2–5/month
+      High-end PC (GPU) → +$10–20/month
+    Source: actual electricity cost data is in instances/cost_estimation.yaml.
 
   break_even_formula: >
     payback_months = device_price / (monthly_api_cost - device_monthly_cost)
-    When monthly_api_cost <= device_monthly_cost: local is never cheaper on cost alone.
+    When monthly_api_cost <= device_monthly_cost: local is never cheaper on cost alone
+    (privacy or performance requirements may still justify local).
     Interpretation thresholds are in instances/cost_estimation.yaml.

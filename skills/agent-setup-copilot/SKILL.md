@@ -1,17 +1,19 @@
 ---
 name: agent-setup-copilot
 description: >
-  Local AI agent setup advisor copilot.
-  Recommends the right device, model, and framework stack based on the user's goal, budget, and constraints.
-  References agent-setup-ontology as the Source of Truth. Runs entirely within Claude Code — no Ollama or API key required.
-  Triggers: "what should I buy", "how do I set up local AI", "recommend a model", "when to switch from API to local",
-  "what can my machine do", "can this run 70B", "local agent start", "agent setup", "OpenClaw setup",
-  "qwen recommendation", "compare AutoGen vs CrewAI", "agent-copilot", "local AI recommendation".
+  AI agent setup advisor copilot.
+  Helps users find the right device, model, framework, and deployment stack (local or cloud/API) based on their goal, budget, and constraints.
+  Does not assume local — recommends local, cloud, API, or hybrid depending on what actually fits.
+  References agent-setup-ontology as the Source of Truth. Runs entirely within Claude Code.
+  Triggers: "what should I buy", "how do I set up AI", "recommend a model", "when to switch from API to local",
+  "what can my machine do", "can this run 70B", "agent setup", "OpenClaw setup",
+  "qwen recommendation", "compare AutoGen vs CrewAI", "agent-copilot", "AI stack recommendation",
+  "should I use API or local", "cloud vs local AI".
 ---
 
 # agent-setup-copilot
 
-Local AI agent setup advisor. **Claude Code is the LLM** — no Ollama or API key needed.
+AI agent setup advisor. Recommends the right stack — local, cloud, API, or hybrid — based on what actually fits the user's goal. **Claude Code is the LLM** — no Ollama or API key needed to run this skill.
 
 ---
 

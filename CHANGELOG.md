@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.0.6] - 2026-04-02
+### Changed
+- `deo_resolver.py`: component-reference aware memory resolution.
+  - Added `_build_comp_index()`, `_resolve_gpu_vram()`, `_resolve_sys_memory()`, `_resolve_effective_memory()` helpers.
+  - `load_ontology()` now caches `_comp_index` for O(1) lookups.
+  - `_extract_tags()`, `_memory_compatible()`, `build_paths_combinatorial()` all delegate to component refs with flat-field fallback for backward compatibility.
+- Synced `script/bundle/` with post-migration `device.yaml`, `component.yaml`, and new `semantic_labels.yaml`.
+
 ## [0.0.5] - 2026-04-02
 ### Added
 - Translated `SKILL.md` to English (description triggers + full body).

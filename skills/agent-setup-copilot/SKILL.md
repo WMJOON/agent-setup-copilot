@@ -41,7 +41,7 @@ skills/agent-setup-copilot/script/
 ```
 
 1. **5 fixed states** — DETECT / INTAKE / GATE / PROPOSE / DONE. No additions.
-2. **5 slots** — goal / constraint / tech_level / success / deployment_target.
+2. **6 slots** — goal / constraint / tech_level / success / deployment_target / user_scale.
    - `answer_style` is not a formal slot; inferred immediately in DETECT as an internal variable.
 3. **1 question per turn** — minimize user burden.
 4. **Scripts only in PROPOSE** — never run scripts before diagnosis.
@@ -84,7 +84,7 @@ Do not assert — confirm with "It seems you're X — is that right?" then move 
 
 > Up to 5 turns (base 4 + 1 for deployment_target)
 
-5 slots to fill:
+6 slots to fill:
 
 ```
 goal              — why they want local AI (cost / performance / privacy / exploration)
@@ -92,6 +92,7 @@ constraint        — budget, existing hardware, or time limit
 tech_level        — developer or not, AI experience level
 success           — what they want to know by end of conversation
 deployment_target — runtime environment (local / aws / runpod / azure / undecided)
+user_scale        — number of intended users (single / team / enterprise)
 ```
 
 > `deployment_target`: ask once if a cloud keyword appears or is unresolved before PROPOSE.
@@ -143,6 +144,12 @@ goal filled + constraint filled  → enter PROPOSE
 goal not filled                  → loop back to INTAKE (max 1 time)
 4 turns exhausted (no goal)      → force enter PROPOSE
 ```
+
+**Categorical Semantic Tracing Rule:** 
+When user parameters change (e.g., `user_scale`), you MUST trace Semantic Labels mapped from the Fact layer (defined in `semantic_labels.yaml`).
+- **Evaluate Semantic Labels:** For example, scaling to a Team requires the `Always_On_Friendly` and `High_Security_Compliance` labels, but avoids `Team_Scale_Bottleneck`.
+- **Prune & Check-back:** If the user's current hardware (e.g. laptop) violates these labels (i.e. it lacks `Always_On_Friendly` or suffers from `Team_Scale_Bottleneck`), you MUST halt.
+- **Provide Semantic Reasoning:** Do not immediately propose a new setup. Guide the user using semantic terms: *"5명 팀 스케일의 경우 로컬 서버가 'Always-On Friendly' 해야 하고 'Team Scale Bottleneck'이 없어야 합니다. 현재 노트북은 이 시맨틱 기준을 충족하기 어려운데, 클라우드 우회로를 검토하시겠습니까?"*
 
 Before entering PROPOSE, output a slot summary and confirm:
 

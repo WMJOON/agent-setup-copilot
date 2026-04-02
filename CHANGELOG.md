@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.0.9] - 2026-04-02
+### Fixed
+- `SKILL.md`: removed scripted example sentences from Tone section — example phrases were being followed too literally, constraining natural conversation flow. Rules alone are sufficient.
+- `SKILL.md`: removed "local AI" assumption from opening question guidance; added explicit rule to never assume deployment target before user reveals it.
+- `SKILL.md`: clarified "concise" means no-fluff 2–4 sentences, not a single abrupt line.
+
 ## [0.0.8] - 2026-04-02
 ### Fixed
 - `SKILL.md`: added Tone section with explicit anti-patterns (no activation announcements, no formal honorifics, no user-type labels spoken aloud, 1 question per turn). Added bad/good example for target conversational register.

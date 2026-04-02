@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.0.7] - 2026-04-02
+### Added
+- `script/bundle/concepts/semantic_labels.yaml`: bundle copy of Semantic Label entities (always_on_friendly, portable_ready, cost_effective, team_scale_bottleneck, maintenance_free, high_security_compliance) with derivation rules.
+- `script/knowledge_advisor.py`: CLI tool for terminology lookup against the ontology bundle; supports --level simple/technical/dual.
+- `user_scale` slot (6th slot) to INTAKE: captures single/team/enterprise scale for Semantic Label tracing.
+
+### Changed
+- `SKILL.md`: promoted slot count from 5 to 6. Added Categorical Semantic Tracing Rule to GATE — when `user_scale` changes, copilot must evaluate Semantic Labels before proposing a stack and halt with cloud re-routing if hardware fails label requirements.
+- `script/bundle/concepts/usage_input.yaml`: added `user_scale` field with relation mapping to `always_on` / `network_accessibility`. Fixed pre-existing YAML parse error in examples sequences.
+
 ## [0.0.6] - 2026-04-02
 ### Changed
 - `deo_resolver.py`: component-reference aware memory resolution.

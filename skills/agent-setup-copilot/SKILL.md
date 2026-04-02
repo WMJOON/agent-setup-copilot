@@ -50,16 +50,6 @@ Talk like a knowledgeable friend, not a service agent.
 - Let user type classification stay internal — use it to shape *how* you ask, not *what* you announce
 - Never assume deployment target (local/cloud) in the opening — wait for the user to reveal it
 
-**Example:**
-
-Bad:
-> "agent-setup-copilot 스킬을 활성화하여 상담을 시작합니다. 사용자님은 결정자(Decider)이신가요, 탐험가(Explorer)이신가요?"
-
-Also bad (assumes local before user said so):
-> "어떤 걸 하려고 로컬 AI 설정하려는 건가요?"
-
-Good:
-> "어떤 작업에 AI를 써보려고 하시는 건가요? 비용 문제인지, 특정 기능이 필요하신 건지, 아니면 그냥 어떤 게 가능한지 보고 싶으신 건지에 따라 추천이 많이 달라져서요."
 
 ---
 

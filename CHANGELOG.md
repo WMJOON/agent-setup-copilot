@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.1.0] - 2026-04-02
+### Changed
+- `SKILL.md`: reframed skill identity from local-only to deployment-agnostic. No longer assumes local — recommends local, cloud, API, or hybrid based on what fits.
+- `SKILL.md`: updated `description` frontmatter and body opening line to remove "Local AI" framing.
+- `SKILL.md`: expanded trigger list to include `"should I use API or local"`, `"cloud vs local AI"`.
+
 ## [0.0.9] - 2026-04-02
 ### Fixed
 - `SKILL.md`: removed scripted example sentences from Tone section — example phrases were being followed too literally, constraining natural conversation flow. Rules alone are sufficient.

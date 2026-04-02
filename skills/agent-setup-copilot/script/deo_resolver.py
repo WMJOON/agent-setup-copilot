@@ -79,6 +79,51 @@ def _read_yaml(path: Path) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
+# ── Component-aware memory helpers ───────────────────────────────────────────
+# Supports both legacy flat fields (memory_gb / gpu_vram_gb) and the
+# component-reference format introduced in ontology v0.0.6.
+
+_UNIFIED_MEMORY_TYPES = {"macbook", "mac-mini", "mac-studio", "ai-supercomputer"}
+
+
+def _build_comp_index(ontology: dict) -> dict[str, dict]:
+    """Return {component_id: component_dict} from loaded ontology."""
+    return {c["id"]: c for c in (ontology.get("components") or []) if "id" in c}
+
+
+def _resolve_gpu_vram(device: dict, comp_index: dict) -> int:
+    """VRAM available for LLM layers on a discrete GPU device.
+    Returns 0 for Apple/unified-memory devices (use _resolve_effective_memory instead).
+    """
+    gpu_id = device.get("gpu_component")
+    if gpu_id:
+        return comp_index.get(gpu_id, {}).get("vram_gb", 0)
+    return device.get("gpu_vram_gb", 0)
+
+
+def _resolve_sys_memory(device: dict, comp_index: dict) -> int:
+    """System RAM capacity (DDR). For Apple/unified devices, use unified_memory_gb."""
+    ram_id = device.get("ram_component")
+    if ram_id:
+        return comp_index.get(ram_id, {}).get("capacity_gb", 0)
+    return device.get("memory_gb", 0)
+
+
+def _resolve_effective_memory(device: dict, comp_index: dict) -> int:
+    """Effective memory for LLM loading.
+    - Discrete GPU PC → GPU VRAM (or sys RAM if CPU-only)
+    - Apple / unified-memory (mac, DGX Spark) → unified_memory_gb
+    """
+    dev_type = device.get("type", "")
+    if dev_type in _UNIFIED_MEMORY_TYPES:
+        return device.get("unified_memory_gb", device.get("memory_gb", 0))
+    # PC / SFF: GPU VRAM takes precedence; fall back to sys RAM for CPU-only
+    vram = _resolve_gpu_vram(device, comp_index)
+    if vram > 0:
+        return vram
+    return _resolve_sys_memory(device, comp_index)
+
+
 def load_ontology() -> dict:
     onto: dict = {}
     for entity in _INSTANCE_ENTITIES:
@@ -146,6 +191,8 @@ def load_ontology() -> dict:
         }
 
     onto["relation_indexes"] = rel_indexes
+    # Pre-build component index for memory/VRAM resolution
+    onto["_comp_index"] = _build_comp_index(onto)
 
     if not onto:
         raise FileNotFoundError(
@@ -295,7 +342,20 @@ class OntologyNode:
     raw: dict = field(default_factory=dict)
 
 
-def _extract_tags(item: dict, kind: str) -> tuple[list[str], list[str]]:
+def _device_price_usd(device: dict) -> int | None:
+    """Extract approximate USD price from device data."""
+    if "price_usd" in device:
+        return int(device["price_usd"])
+    price_range = device.get("price_range", "")
+    m = re.search(r"([\d,.]+)\s*만원", price_range)
+    if m:
+        return int(float(m.group(1)) * 10000 / 1300)
+    m = re.search(r"\$\s*([\d,]+)", price_range)
+    if m:
+        return int(m.group(1).replace(",", ""))
+    return None
+
+def _extract_tags(item: dict, kind: str, comp_index: dict | None = None) -> tuple[list[str], list[str]]:
     """Extract positive and negative tags from an ontology item."""
     pos: list[str] = []
     neg: list[str] = []
@@ -307,8 +367,34 @@ def _extract_tags(item: dict, kind: str) -> tuple[list[str], list[str]]:
     pos.extend(re.findall(r"[a-z가-힣][a-z0-9가-힣._:-]*", label.lower()))
 
     if kind == "device":
-        pos.append(item.get("type", ""))
-        pos.append(item.get("tier", ""))
+        _ci = comp_index or {}
+        dev_type = item.get("type", "")
+        tier = item.get("tier", "")
+        form_factor = item.get("form_factor", "")
+        pos.append(dev_type)
+        pos.append(tier)
+
+        # --- Dynamic Semantic Labels (component-aware) ---
+        price = _device_price_usd(item) or 999999
+        if price < 1000 and tier in ["standard", "standard-plus", "pro", "pro-plus"]:
+            pos.append("cost_effective")
+
+        if dev_type in ["mac-mini", "mac-studio", "pc", "ai-supercomputer"] or item.get("always_on") or form_factor in ["desktop", "mini_pc"]:
+            pos.append("always_on_friendly")
+
+        if dev_type == "macbook" or form_factor == "laptop" or item.get("portability") == "portable":
+            pos.append("portable_ready")
+
+        # team_scale_bottleneck: use effective memory (supports both flat + component ref)
+        eff_mem = _resolve_effective_memory(item, _ci)
+        if eff_mem < 32:
+            neg.append("team_scale_bottleneck")
+
+        if dev_type in ["macbook", "mac-mini", "mac-studio"]:
+            pos.append("maintenance_free")
+
+        pos.append("high_security_compliance")
+
         if item.get("portability"):
             pos.append(item["portability"])
         if item.get("always_on"):
@@ -325,8 +411,9 @@ def _extract_tags(item: dict, kind: str) -> tuple[list[str], list[str]]:
         unsupported = item.get("unsupported_use_cases", [])
         if isinstance(unsupported, list):
             neg.extend(unsupported)
-        # GPU presence
-        if item.get("gpu_vram_gb", 0) > 0:
+        # GPU presence: check component ref first, fall back to flat field
+        has_gpu = bool(item.get("gpu_component")) or _resolve_gpu_vram(item, _ci) > 0
+        if has_gpu:
             pos.append("gpu")
             pos.append("cuda")
         else:
@@ -404,9 +491,10 @@ def build_nodes(ontology: dict) -> list[OntologyNode]:
         "setup_profiles": "setup_profile",
         "use_cases": "use_case",
     }
+    comp_index = ontology.get("_comp_index", {})
     for section, kind in entity_map.items():
         for item in ontology.get(section, []):
-            pos, neg = _extract_tags(item, kind)
+            pos, neg = _extract_tags(item, kind, comp_index=comp_index)
             nodes.append(OntologyNode(
                 id=item.get("id", ""),
                 kind=kind,
@@ -458,20 +546,7 @@ def _parse_budget_constraint(constraint: str) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def _device_price_usd(device: dict) -> int | None:
-    """Extract approximate USD price from device data."""
-    if "price_usd" in device:
-        return int(device["price_usd"])
-    price_range = device.get("price_range", "")
-    # Parse Korean won format: "120만원~"
-    m = re.search(r"([\d,.]+)\s*만원", price_range)
-    if m:
-        return int(float(m.group(1)) * 10000 / 1300)
-    # Parse USD format: "~$3,000"
-    m = re.search(r"\$\s*([\d,]+)", price_range)
-    if m:
-        return int(m.group(1).replace(",", ""))
-    return None
+
 
 
 def check_hard_constraints(
@@ -581,11 +656,9 @@ class SetupPath:
         return len(self.hard_violations) == 0
 
 
-def _memory_compatible(device: dict, model: dict) -> bool:
-    """Check if a model fits on a device."""
-    dev_mem = device.get("memory_gb", 0)
-    if device.get("type") == "pc" and device.get("gpu_vram_gb", 0) > 0:
-        dev_mem = device["gpu_vram_gb"]
+def _memory_compatible(device: dict, model: dict, comp_index: dict | None = None) -> bool:
+    """Check if a model fits on a device (component-reference aware)."""
+    dev_mem = _resolve_effective_memory(device, comp_index or {})
     model_min = model.get("min_memory_gb", 0)
     return dev_mem >= model_min
 
@@ -718,11 +791,12 @@ def build_paths_combinatorial(
     top_models = top_n(models, 5)
     top_frameworks = top_n(frameworks, 5)
 
+    comp_index = ontology.get("_comp_index", {})
     paths: list[SetupPath] = []
     for dev in top_devices:
         for mod in top_models:
-            # Memory compatibility check
-            if not _memory_compatible(dev.raw, mod.raw):
+            # Memory compatibility check (component-reference aware)
+            if not _memory_compatible(dev.raw, mod.raw, comp_index=comp_index):
                 continue
             for fw in top_frameworks:
                 path = SetupPath(device=dev, model=mod, framework=fw)

@@ -135,3 +135,11 @@ model:
       (1) define taxonomy conceptually here,
       (2) add instance metadata as optional fields later,
       (3) promote to governance only after copilot actually uses them.
+
+    explanations:
+      what: >
+        Multi-level knowledge explanations for technical terms associated with this model.
+        This field provides tailored descriptions based on the user's tech_level.
+      fields:
+        simple: "A simplified analogy or functional description for Explorers/beginners."
+        technical: "A technical specification or architecture-level description for Builders/experts."

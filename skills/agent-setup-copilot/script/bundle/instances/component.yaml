@@ -72,6 +72,23 @@ components:
     inference_tier: pro
     llm_perf_note: "~40-50 t/s for 27B Q4. Runs 32B dense in VRAM."
     price_search_query: "NVIDIA RTX 4090 24GB GPU price"
+    explanations:
+      simple: "현존하는 일반 그래픽카드 중 가장 똑똑한 '공부 머리'를 가진 부품입니다. 웬만한 대형 AI 모델도 이 카드 한 장이면 빠르게 돌릴 수 있습니다."
+      technical: "24GB GDDR6X VRAM과 16,384개의 CUDA 코어를 탑재한 하이엔드 GPU입니다. 대역폭 1,008 GB/s로 70B급 모델의 4-bit 양자화 추론을 15-20 t/s 속도로 완벽하게 소화합니다."
+
+  - id: rtx-3090
+    label: "NVIDIA GeForce RTX 3090"
+    component_type: gpu
+    vram_gb: 24
+    memory_bandwidth_gbs: 936
+    tdp_w: 350
+    architecture: ampere
+    inference_tier: pro
+    llm_perf_note: "가용 비디오 램 24GB로 70B 모델 구동 가능. 가성비 최고의 24GB 카드."
+    price_search_query: "NVIDIA RTX 3090 24GB GPU 중고 가격"
+    explanations:
+      simple: "구형 모델이지만 AI가 생각할 수 있는 '기억 공간(VRAM)'이 최신 고가 모델과 똑같아서, 매우 저렴하게 고성능 AI를 구축할 수 있는 효자 부품입니다."
+      technical: "Ampere 아키텍처 기반이며 24GB VRAM을 보유하고 있습니다. 중고 시장에서 OCuLink와 조합 시 가장 낮은 비용으로 pro 티어 모델(70B 등)을 구동할 수 있는 핵심 컴포넌트입니다."
 
   # ── NVIDIA GPUs (Blackwell — RTX 50 series) ────────────
 

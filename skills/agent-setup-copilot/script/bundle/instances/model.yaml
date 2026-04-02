@@ -23,6 +23,9 @@ models:
     speed_note: "~20-35 t/s (M-series 16GB)"
     sweet_spot: true
     note: "개인 사용 가성비 최강. 16GB 기기의 기본 선택"
+    explanations:
+      simple: "가장 보편적으로 쓰기 좋은 '모범생' 모델입니다. 적당한 사양에서도 아주 빠르게 돌아가며, 웬만한 일상적인 질문이나 간단한 코딩은 척척 해결합니다."
+      technical: "9B 파라미터 조밀(dense) 모델로, 개인용 로컬 에이전트의 베이스라인 모델입니다. 16GB 통합 메모리 환경에서 가장 높은 토큰 당 속도(t/s)를 보여주며, 도구 호출(Tool Calling) 안정성이 매우 높습니다."
 
   - id: qwen3.5:14b
     label: "qwen3.5:14b"
@@ -44,6 +47,9 @@ models:
     speed_note: "~18-25 t/s (M4 base 32GB)"
     sweet_spot: true
     note: "MoE — 35B 품질, 실제 3B 활성화. 32GB 기기 베스트픽"
+    explanations:
+      simple: "머리는 좋은데 순발력까지 갖춘 '가성비 천재' 모델입니다. 실제로는 일부 두뇌만 사용하기 때문에 사양이 아주 높지 않아도 충분히 똑똑한 답변을 내놓습니다."
+      technical: "MoE(Mixture-of-Experts) 아키텍처 기반으로, 총 35B 파라미터 중 토큰당 약 3B만 활성화하여 추론 속도를 극대화했습니다. 32GB 메모리 환경에서 'Pro' 등급의 추론 품질을 가장 쾌적하게 얻을 수 있는 전략적 선택지입니다."
 
   - id: qwen3.5:27b
     label: "qwen3.5:27b"
@@ -73,6 +79,9 @@ models:
     tool_calling: true
     speed_note: "~12-15 t/s (Mac Studio M4 Max 128GB / DGX Spark)"
     note: "Highest quality open-weight model. Requires 64GB+ unified memory or 48GB VRAM."
+    explanations:
+      simple: "현존하는 오픈소스 AI 중 최고의 실력을 자랑하는 '전교 1등' 모델입니다. 똑똑하지만 덩치가 커서 구동하려면 아주 강력한 하드웨어가 필요합니다."
+      technical: "72B 파라미터의 고밀도 대형 언어 모델(LLM)로, 복합 추론 및 다단계 에이전트 워크플로우에서 API 수준의 성능을 냅니다. 원활한 구동을 위해 최소 64GB의 통합 메모리 또는 RTX 3090/4090 2장급 VRAM이 권장됩니다."
 
   # ── Meta Llama ─────────────────────────────────────────
 

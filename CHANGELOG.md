@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.0.8] - 2026-04-02
+### Fixed
+- `SKILL.md`: added Tone section with explicit anti-patterns (no activation announcements, no formal honorifics, no user-type labels spoken aloud, 1 question per turn). Added bad/good example for target conversational register.
+- `SKILL.md`: translated Categorical Semantic Tracing Rule example from Korean to English.
+
 ## [0.0.7] - 2026-04-02
 ### Added
 - `script/bundle/concepts/semantic_labels.yaml`: bundle copy of Semantic Label entities (always_on_friendly, portable_ready, cost_effective, team_scale_bottleneck, maintenance_free, high_security_compliance) with derivation rules.

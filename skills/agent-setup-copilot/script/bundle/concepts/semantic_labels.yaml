@@ -1,0 +1,40 @@
+# agent-setup-ontology — Semantic Label Entities
+# Functional labels dynamically derived from mechanical facts.
+version: "0.1.0"
+
+semantic_labels:
+  - id: always_on_friendly
+    label: "Always-On Friendly"
+    description: "Device can safely and efficiently run 24/7 as a server."
+    positive: true
+    derivation_rule: "device.type in ['mac-mini', 'mac-studio', 'pc', 'ai-supercomputer'] or device.always_on == true or device.form_factor in ['desktop', 'mini_pc']"
+
+  - id: portable_ready
+    label: "Portable Ready"
+    description: "Device is highly mobile, suitable for coffee shops or travel."
+    positive: true
+    derivation_rule: "device.type == 'macbook' or device.form_factor == 'laptop' or device.portability == 'portable'"
+
+  - id: cost_effective
+    label: "Cost Effective"
+    description: "Presents a high capability-to-price ratio."
+    positive: true
+    derivation_rule: "device.price_usd < 1000 and device.tier in ['standard', 'standard-plus', 'pro']"
+
+  - id: team_scale_bottleneck
+    label: "Team Scale Bottleneck"
+    description: "Hardware will struggle under concurrent multi-user load."
+    positive: false
+    derivation_rule: "device.memory_gb < 32"
+
+  - id: maintenance_free
+    label: "Maintenance Free"
+    description: "Requires minimal to no hardware/driver troubleshooting."
+    positive: true
+    derivation_rule: "device.type in ['mac-mini', 'mac-studio', 'macbook']"
+
+  - id: high_security_compliance
+    label: "High Security Compliance"
+    description: "Prevents data leakage by running localized standalone setups."
+    positive: true
+    derivation_rule: "device is local and not mapped to third-party cloud"

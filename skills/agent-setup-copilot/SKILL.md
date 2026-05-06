@@ -27,7 +27,28 @@ skills/agent-setup-copilot/script/
 ├── deo_resolver.py         # DEO constraint reasoning: positive/negative/constraint → optimal path
 ├── sync_ontology_bundle.py # Sync ontology SOT → copilot bundle/cache + smoke test
 ├── surface_advisor.py      # Rank CLI/IDE/API surfaces by OpenClaw fit, auth mode, headless suitability
-└── knowledge_advisor.py    # Term/path explanations at simple/technical/dual level for PROPOSE
+├── knowledge_advisor.py    # Term/path explanations at simple/technical/dual level for PROPOSE
+└── eval/                   # Phase G — Eval layer (output quality)
+    ├── freshness_eval.py       # Ontology freshness (evidence_refs age)
+    ├── estimator_eval.py       # estimator.py accuracy vs speed_note benchmark
+    ├── recommendation_eval.py  # Programmatic + LLM-as-judge quality eval
+    └── golden_cases.yaml       # Expert-defined ground truth cases
+```
+
+### Eval 실행
+
+```bash
+# Ontology freshness
+python3 skills/agent-setup-copilot/script/eval/freshness_eval.py
+
+# Estimator accuracy (speed_note 기반)
+python3 skills/agent-setup-copilot/script/eval/estimator_eval.py
+
+# Recommendation quality (golden cases)
+python3 skills/agent-setup-copilot/script/eval/recommendation_eval.py
+
+# 전체 + LLM judge (API 키 필요)
+python3 skills/agent-setup-copilot/script/eval/recommendation_eval.py --llm-judge
 ```
 
 ---

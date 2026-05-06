@@ -53,22 +53,53 @@ That's it. Ask Claude Code directly:
 
 | Script | Purpose |
 |--------|---------|
-| `skills/agent-setup-copilot/script/loader.py` | Fetch concepts + instances from SOT |
-| `skills/agent-setup-copilot/script/estimator.py` | Estimate tokens/second for device x model |
-| `skills/agent-setup-copilot/script/transition.py` | Calculate optimal API -> local transition month |
-| `skills/agent-setup-copilot/script/deo_resolver.py` | DEO constraint-aware setup path resolver |
-| `skills/agent-setup-copilot/script/sync_ontology_bundle.py` | Sync ontology SoT into copilot bundle + cache, optionally smoke-test |
-| `skills/agent-setup-copilot/script/surface_advisor.py` | Rank CLI / IDE / API surfaces by OpenClaw fit, auth mode, and headless suitability |
+| `script/loader.py` | Fetch concepts + instances from SOT |
+| `script/estimator.py` | Estimate tokens/second for device x model |
+| `script/transition.py` | Calculate optimal API → local transition month |
+| `script/deo_resolver.py` | DEO constraint-aware setup path resolver |
+| `script/sync_ontology_bundle.py` | Sync ontology SoT into copilot bundle + cache |
+| `script/surface_advisor.py` | Rank CLI / IDE / API surfaces by fit and headless suitability |
+| `script/knowledge_advisor.py` | Term/path explanations at simple / technical / dual level |
 
 ```bash
-# Examples (run directly or via Claude Code)
-python3 skills/agent-setup-copilot/script/loader.py --update
-python3 skills/agent-setup-copilot/script/estimator.py --device mac_mini_m4_32gb --compare-models
-python3 skills/agent-setup-copilot/script/estimator.py --device mac_mini_m4_32gb --summary-style simple
-python3 skills/agent-setup-copilot/script/transition.py --api claude-haiku-4-5 --monthly-cost 15 --growth 10
-python3 skills/agent-setup-copilot/script/deo_resolver.py --query "fast agent without docker" --goal web_automation
-python3 skills/agent-setup-copilot/script/sync_ontology_bundle.py --smoke-test
-python3 skills/agent-setup-copilot/script/surface_advisor.py --prefer-openclaw --require-headless --auth-mode api_key
+SCRIPT=skills/agent-setup-copilot/script
+
+python3 $SCRIPT/loader.py --update
+python3 $SCRIPT/estimator.py --device mac_mini_m4_32gb --compare-models
+python3 $SCRIPT/estimator.py --device mac_mini_m4_32gb --summary-style simple
+python3 $SCRIPT/transition.py --api claude-haiku-4-5 --monthly-cost 15 --growth 10
+python3 $SCRIPT/deo_resolver.py --query "fast agent without docker" --goal web_automation
+python3 $SCRIPT/sync_ontology_bundle.py --smoke-test
+```
+
+---
+
+## Eval (Phase G — output quality)
+
+추천 품질과 데이터 신선도를 평가하는 Eval 레이어.
+
+| Script | What it checks |
+|--------|---------------|
+| `script/eval/freshness_eval.py` | 온톨로지 데이터 신선도 (`updated_at` / `last_verified` 기준) |
+| `script/eval/estimator_eval.py` | estimator 예측 t/s vs `speed_note` 실측 범위 비교 |
+| `script/eval/recommendation_eval.py` | golden cases 기반 추천 품질 (프로그래매틱 + LLM-as-judge) |
+| `script/eval/golden_cases.yaml` | 전문가 정의 ground truth 케이스 |
+
+```bash
+EVAL=skills/agent-setup-copilot/script/eval
+INSTANCES=../agent-setup-ontology/instances  # 또는 로컬 경로
+
+# 온톨로지 신선도
+python3 $EVAL/freshness_eval.py --instances-dir $INSTANCES
+
+# estimator 정확도 (speed_note 대비)
+python3 $EVAL/estimator_eval.py --instances-dir $INSTANCES
+
+# 추천 품질 (golden cases 5개)
+python3 $EVAL/recommendation_eval.py --instances-dir $INSTANCES
+
+# LLM-as-judge 포함 (ANTHROPIC_API_KEY 필요)
+python3 $EVAL/recommendation_eval.py --instances-dir $INSTANCES --llm-judge
 ```
 
 ### Example: plain-language device summary

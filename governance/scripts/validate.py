@@ -48,8 +48,8 @@ REQUIRED_FIELDS = {
 
 ENUM_CONTRACTS = {
     "devices": {
-        "type":        {"macbook", "mac-mini", "mac-studio", "pc", "ai-supercomputer", "other"},
-        "tier":        {"light", "standard", "standard-plus", "pro"},
+        "type":        {"macbook", "mac-mini", "mac-studio", "pc", "pc-sff", "ai-supercomputer", "other"},
+        "tier":        {"light", "standard", "standard-plus", "pro", "pro-plus"},
         "portability": {"portable", "stationary"},
     },
     "models": {
@@ -70,7 +70,7 @@ ENUM_CONTRACTS = {
 }
 
 RUNTIME_SUPPORT_ALLOWED = {"ollama", "openai", "anthropic", "huggingface", "litellm", "any"}
-PROVIDER_ALLOWED = {"anthropic", "openai", "google", "mistral", "cohere", "other"}
+PROVIDER_ALLOWED = {"anthropic", "openai", "google", "mistral", "cohere", "groq", "openrouter", "xai", "other"}
 
 # Cross-reference contract: (source_section, source_field, target_section)
 CROSS_REF_CONTRACTS = [

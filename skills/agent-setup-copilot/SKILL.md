@@ -89,7 +89,7 @@ Talk like a knowledgeable friend, not a service agent.
 1. **5 fixed states** — DETECT / INTAKE / GATE / PROPOSE / DONE. No additions.
 2. **6 slots** — goal / constraint / tech_level / success / deployment_target / user_scale.
    - `answer_style` is not a formal slot; inferred immediately in DETECT as an internal variable.
-3. **1 question per turn** — minimize user burden.
+3. **1 question per turn** — minimize user burden. Exception: the first INTAKE turn may send a bundled intake card (see INTAKE → Bundled Intake Card).
 4. **Scripts only in PROPOSE** — never run scripts before diagnosis.
 5. **State lives in Claude's head** — no external file writes.
 6. **Correction and question in separate turns** — if adversarial reframing happened this turn, move the slot-check question to the next turn.
@@ -102,7 +102,10 @@ Talk like a knowledgeable friend, not a service agent.
 
 Read the first message to form a user type hypothesis — **internal only, never surface it**.
 Do not confirm user type with the user. Do not say "You seem like a Builder" or ask "Am I right?".
-Move directly to the first INTAKE question.
+
+**Fast Path check (run first):** If Fast Path triggers (see below), skip to GATE immediately.
+
+**Otherwise:** Send the bundled intake card (see INTAKE → Bundled Intake Card) instead of asking a single question. This replaces the first INTAKE question turn.
 
 **tech_level detection:**
 - Detect whether the user uses technical language fluently (CLI, VRAM, Quantize, etc.).
@@ -145,6 +148,19 @@ user_scale        — number of intended users (single / team / enterprise)
 > `deployment_target`: ask once if a cloud keyword appears or is unresolved before PROPOSE.
 > If only "local" was mentioned, default to `local` and skip the question.
 
+**Bundled Intake Card** — send as the first INTAKE turn if Fast Path did not trigger:
+
+```
+빠르게 진행할게. 세 가지만 알려줘:
+1. 목표: 뭘 자동화하거나 만들고 싶어?
+2. 기기: 어떤 컴퓨터 쓰고 있어? (RAM 포함, 예: Mac mini M4 64GB)
+3. 실행 환경: 로컬 / 클라우드 / 아직 모름?
+```
+
+- Parse the reply and fill as many slots as possible at once.
+- Any slot still missing after the reply → ask that slot only, 1 per turn.
+- If all three are answered → skip remaining INTAKE turns, go directly to GATE.
+
 **Question Funnel:** Open Framing → Capability Probe → Closed Confirmation.
 Do not rush to fill slots — let the user articulate *why* they want local AI.
 
@@ -169,21 +185,24 @@ Do not rush to fill slots — let the user articulate *why* they want local AI.
 
 ### Fast Path
 
-Skip to GATE immediately if:
+Skip to GATE immediately if **any** of:
 
-1. First message includes 2+ of: hardware / budget / goal
+1. First message includes **1+** of: hardware / budget / goal (lowered from 2+)
 2. Intent is `capability / feasibility / explain` type (e.g., "what can this do", "is this possible", "explain simply")
 3. `constraint` can be extracted directly as a device name
+4. First message answers **all three** bundled intake card slots (goal + hardware + deployment_target)
 
 Apply these defaults:
 ```
-goal = capability_check
-constraint = extracted device
+goal = capability_check          (if not stated)
+constraint = extracted device    (if not stated, ask via bundled card)
 tech_level = inferred from tone
 success = "understand what my machine can and can't do"
-deployment_target = local
+deployment_target = local        (if not stated and no cloud keyword)
 answer_style = simple or technical
 ```
+
+> When Fast Path fires on a partial first message, fill missing slots with defaults — do **not** send the bundled intake card.
 
 ---
 

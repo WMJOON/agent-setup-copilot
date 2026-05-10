@@ -206,6 +206,13 @@ def resolve_device(device_id: str, ontology: dict) -> dict | None:
     return None
 
 
+def _device_memory_gb(device: dict) -> float:
+    """Return unified memory (Apple) or system RAM (PC), preferring unified_memory_gb."""
+    if device.get("type") == "pc":
+        return device.get("gpu_vram_gb", 0)
+    return device.get("unified_memory_gb") or device.get("memory_gb", 0)
+
+
 def resolve_device_spec(device_id: str, ontology: dict) -> dict | None:
     """Return bandwidth and memory for a device."""
     device = resolve_device(device_id, ontology)
@@ -214,7 +221,7 @@ def resolve_device_spec(device_id: str, ontology: dict) -> dict | None:
     return {
         "label": device["label"],
         "bandwidth": device.get("memory_bandwidth_gbs", 50),
-        "memory_gb": device.get("memory_gb", 0),
+        "memory_gb": device.get("unified_memory_gb") or device.get("memory_gb", 0),
         "vram_gb": device.get("gpu_vram_gb", 0),
         "kind": "apple" if device["type"] != "pc" else "pc",
     }
@@ -247,7 +254,7 @@ def select_summary_model(device: dict, ontology: dict) -> dict | None:
         if model:
             return model
 
-    avail = device.get("memory_gb", 0) if device.get("type") != "pc" else device.get("gpu_vram_gb", 0)
+    avail = _device_memory_gb(device)
     candidates: list[tuple[int, int, dict]] = []
     for model in ontology.get("models", []):
         fits, _, _ = fits_in_memory(avail, model)
@@ -468,7 +475,7 @@ def report_compare_devices(model_id: str, ontology: dict) -> str:
     ]
 
     for d in all_devices(ontology):
-        avail = d.get("memory_gb", 0) if d.get("type") != "pc" else d.get("gpu_vram_gb", 0)
+        avail = _device_memory_gb(d)
         bw = d.get("memory_bandwidth_gbs", 50)
         _, m_gb, req_gb = fits_in_memory(avail, model)
         fits = req_gb <= avail
